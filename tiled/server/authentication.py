@@ -130,7 +130,7 @@ async def check_single_user_api_key(
         if api_key is not None:
             if secrets.compare_digest(api_key, settings.single_user_api_key):
                 return True
-            raise HTTPException(status_code=401, detail="Invalid API key")
+            raise HTTPException(status_code=401, detail=f"Invalid API key {api_key!r} does not match expected {settings.single_user_api_key!r}")
     return False
 
 
