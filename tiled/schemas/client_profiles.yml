@@ -98,6 +98,8 @@ properties:
         dataframe: "package.module:CustomDataFrameClient"
       ```
 
+  special_clients:
+    type: object
   cache:
     type: object
     additionalProperties: false
