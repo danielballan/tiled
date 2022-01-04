@@ -453,6 +453,7 @@ def _watch(
                     greedy,
                     collision_tracker,
                 )
+                queued_changes.clear()
             # Process changes just collected.
             _process_changes(
                 changes,
