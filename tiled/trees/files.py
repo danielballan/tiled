@@ -325,7 +325,12 @@ class Tree(TreeInMemory):
                     else:
                         index[parts].set(key, reader_factory)
                         if greedy:
-                            index[parts][key]
+                            try:
+                                index[parts][key]
+                            except Exception as err:
+                                warnings.warn(
+                                    f"Ignored error while greedily accessing {parts + (key,)}: {err!r}"
+                                )
                 collision_tracker[(*parts, key)].add(filepath)
         # Appending any object will cause bool(initial_scan_complete) to
         # evaluate to True.
@@ -573,7 +578,12 @@ def _process_changes(
                     else:
                         index[parent_parts].set(key, reader_factory)
                         if greedy:
-                            index[parent_parts][key]
+                            try:
+                                index[parent_parts][key]
+                            except Exception as err:
+                                warnings.warn(
+                                    f"Ignored error while greedily accessing {parent_parts + (key,)}: {err!r}"
+                                )
                     collision_tracker[(*parent_parts, key)].add(rel_path)
         elif kind == Change.deleted:
             if path.is_dir():
@@ -628,7 +638,12 @@ def _process_changes(
                 else:
                     index[parent_parts].set(key, reader_factory)
                     if greedy:
-                        index[parent_parts][key]
+                        try:
+                            index[parent_parts][key]
+                        except Exception as err:
+                            warnings.warn(
+                                f"Ignored error while greedily accessing {parent_parts + (key,)}: {err!r}"
+                            )
     for adapter, changes in to_notify.items():
         print(changes)
         if hasattr(adapter, "get_changes_callback"):
@@ -699,7 +714,12 @@ def _new_subdir(
         index[parent_parts + (subdirectory,)] = mapping
         index[parent_parts].set(subdirectory, functools.partial(TreeInMemory, mapping))
         if greedy:
-            index[parent_parts][subdirectory]
+            try:
+                index[parent_parts][subdirectory]
+            except Exception as err:
+                warnings.warn(
+                    f"Ignored error while greedily accessing {parent_parts + (subdirectory,)}: {err!r}"
+                )
     else:
         # Hand off management of this directory to the handler.
         d = subdirectory_trie
@@ -710,7 +730,12 @@ def _new_subdir(
         d[subdirectory] = adapter
         index[parent_parts].set(subdirectory, lambda: adapter)
         if greedy:
-            index[parent_parts][subdirectory]
+            try:
+                index[parent_parts][subdirectory]
+            except Exception as err:
+                warnings.warn(
+                    f"Ignored error while greedily accessing {parent_parts + (subdirectory,)}: {err!r}"
+                )
 
 
 COLLISION_WARNING = (
