@@ -386,13 +386,13 @@ class Tree(TreeInMemory):
         self._subdirectory_trie = subdirectory_trie
         self._subdirectory_handler = subdirectory_handler
 
-    def update_now(self):
+    def update_now(self, timeout=None):
         "Force an update and block until it completes."
         event = threading.Event()
         self._manual_trigger.put(event)
         # The worker thread will set this Event when processing completes.
         # Wait on that, and the return.
-        event.wait()
+        event.wait(timeout)
 
     @property
     def directory(self):
