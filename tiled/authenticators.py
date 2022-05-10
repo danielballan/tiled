@@ -2,10 +2,8 @@ import logging
 import re
 import secrets
 
-import ldap3
 from fastapi import APIRouter, Request
 from jose import JWTError, jwk, jwt
-from ldap3.utils.conv import escape_filter_chars
 from starlette.responses import RedirectResponse
 
 from .server.authentication import Mode
@@ -568,9 +566,12 @@ class LDAPAuthenticator:
             return 389  # default plaintext port for LDAP
 
     def resolve_username(self, username_supplied_by_user):
+
+        import ldap3
+
         search_dn = self.lookup_dn_search_user
         if self.escape_userdn:
-            search_dn = escape_filter_chars(search_dn)
+            search_dn = ldap3.utils.conv.escape_filter_chars(search_dn)
         conn = self.get_connection(
             userdn=search_dn, password=self.lookup_dn_search_password
         )
@@ -643,6 +644,9 @@ class LDAPAuthenticator:
         return (user_dn, response[0]["dn"])
 
     def get_connection(self, userdn, password):
+
+        import ldap3
+
         server = ldap3.Server(
             self.server_address, port=self.server_port, use_ssl=self.use_ssl
         )
@@ -666,6 +670,8 @@ class LDAPAuthenticator:
         return attrs
 
     async def authenticate(self, username: str, password: str):
+
+        import ldap3
 
         username_saved = username  # Save the user name passed as a parameter
 
@@ -712,7 +718,7 @@ class LDAPAuthenticator:
                 continue
             userdn = dn.format(username=username)
             if self.escape_userdn:
-                userdn = escape_filter_chars(userdn)
+                userdn = ldap3.utils.conv.escape_filter_chars(userdn)
             msg = "Attempting to bind {username} with {userdn}"
             logger.debug(msg.format(username=username, userdn=userdn))
             msg = "Status of user bind {username} with {userdn} : {is_bound}"
