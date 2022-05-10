@@ -1,11 +1,11 @@
-import ldap3
-from ldap3.utils.conv import escape_filter_chars
 import logging
 import re
 import secrets
 
+import ldap3
 from fastapi import APIRouter, Request
 from jose import JWTError, jwk, jwt
+from ldap3.utils.conv import escape_filter_chars
 from starlette.responses import RedirectResponse
 
 from .server.authentication import Mode
