@@ -34,8 +34,27 @@ is useful when:
 * The code using tiled is running in an unsupervised, automated fashion
   or scaled across many workers, such as in an HPC job, where is it not
   possible to provide credentials interactively.
-* You are connecting from a generic web client like a web browser or `curl`,
-  which has no built-in integration with Tiled or with OpenAPI+OAuth2.
+* You are connecting from a data analysis or visualization program (like Igor Pro or
+  Plotly Chart Studio) or a generic web client (like a web browser) which has no
+  built-in integration with Tiled or with OpenAPI+OAuth2. You cannot "log in";
+  you need a URL that gives access to the data.
+
+
+## Personal Keys and Shared Keys
+
+A **Personal Key** is associated with a user account and can access all the
+data the user can access. A given key be optionally configured restrict _what_
+it can do (e.g. "read-only"). As the name says, it is intended for personal use
+and should not be shared with other users.
+
+A **Shared Key** is not associated with any account. It is useful to sharing
+data with applications or services that should only get access to certain data,
+a subset of the data that the user who _creates_ the Shared Key could access
+with their Personal Key. Because it is not associated with any account, it will
+continue working even if the user who created it deactivates their account.
+
+To make an analogy to GitHub: Personal Keys are like GitHub Personal Access Tokens,
+and Shared Keys are like GitHub Deploy Keys.
 
 ## Create an API Key
 
