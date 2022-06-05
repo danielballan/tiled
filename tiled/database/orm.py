@@ -46,6 +46,31 @@ class JSONList(TypeDecorator):
         return value
 
 
+class JSONDict(TypeDecorator):
+    """Represents an immutable structure as a json-encoded string.
+
+    Usage::
+
+        JSONDict(255)
+
+    """
+
+    impl = Unicode
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if not isinstance(value, dict):
+            raise ValueError("JSONDict  must be given a literal `dict` type.")
+        if value is not None:
+            value = json.dumps(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            value = json.loads(value)
+        return value
+
+
 class UUID(TypeDecorator):
     """Represents a UUID in a dialect-agnostic way
 
@@ -152,8 +177,8 @@ class Role(Timestamped, Base):
     )
 
 
-class APIKey(Timestamped, Base):
-    __tablename__ = "api_keys"
+class APIKey(Timestamped):
+    "APIKey base class"
 
     # Store the first_eight characters of the hex-encoded secret.
     # The key holder can use this to identity the key.
@@ -167,13 +192,39 @@ class APIKey(Timestamped, Base):
     expiration_time = Column(DateTime(timezone=False), nullable=True)
     latest_activity = Column(DateTime(timezone=False), nullable=True)
     note = Column(Unicode(1023), nullable=True)
-    principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
     scopes = Column(JSONList(511), nullable=False)
     # In the future we could make it possible to disable API keys
     # without deleting them from the database, for forensics and
     # record-keeping.
 
+
+class PersonalKey(APIKey, Base):
+    """
+    API keys associated with a Principal
+
+    These are analogous to GitHub Personal Access Tokens.
+    """
+
+    __tablename__ = "personal_keys"
+
+    principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
     principal = relationship("Principal", back_populates="api_keys")
+
+
+class SharedKey(APIKey, Base):
+    """
+    API keys *not* associated with a Principal
+
+    These are associated with path + filter that targets specific data.
+    They are analogous to GitHub Deploy Keys.
+    """
+
+    __tablename__ = "shared_keys"
+
+    # The length limit for path is based on the practical length limit for URLs.
+    path = Column(JSONList(2047), nullable=True)
+    # The length limit for filter is somewhat arbitrary.
+    filter = Column(JSONDict(65535), nullable=True)
 
 
 class Session(Timestamped, Base):
