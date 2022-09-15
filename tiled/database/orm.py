@@ -13,36 +13,11 @@ from sqlalchemy import (
     Unicode,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator
 
 from ..server.schemas import PrincipalType
-from ..structures.core import StructureFamily
 from .base import Base
-
-
-class JSON(TypeDecorator):
-    """Represents an immutable structure as JSON-encoded data.
-
-    Usage::
-
-        JSON(255)
-
-    """
-
-    impl = Unicode
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
 
 
 class JSONList(TypeDecorator):
@@ -61,32 +36,6 @@ class JSONList(TypeDecorator):
         # Make sure we don't get passed some iterable like a dict.
         if not isinstance(value, list):
             raise ValueError("JSONList must be given a literal `list` type.")
-        if value is not None:
-            value = json.dumps(value)
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
-
-
-class JSONDict(TypeDecorator):
-    """Represents an immutable structure as a JSON-encoded dict (i.e. object).
-
-    Usage::
-
-        JSONDict(255)
-
-    """
-
-    impl = Unicode
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):
-        # Make sure we don't get passed some iterable like a dict.
-        if not isinstance(value, dict):
-            raise ValueError("JSONDict must be given a literal `dict` type.")
         if value is not None:
             value = json.dumps(value)
         return value
