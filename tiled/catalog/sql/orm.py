@@ -15,7 +15,7 @@ from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator
 
-from ..structures.core import StructureFamily
+from ...structures.core import StructureFamily
 from .base import Base
 
 
@@ -136,7 +136,7 @@ class DataSource(Timestamped, Base):
 
     # This id is internal, never exposed to the user.
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    node_id = Column(Integer, ForeignKey("node.id"), nullable=False)
+    node_id = Column(Integer, ForeignKey("nodes.id"), nullable=False)
 
     # For 'node' and 'dataframe' structures this tell us which field(s)
     # this DataSource provides.
@@ -165,7 +165,7 @@ class Asset(Timestamped):
 
     # This id is internal, never exposed to the user.
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    data_source_id = Column(Integer, ForeignKey("data_source.id"), nullable=False)
+    data_source_id = Column(Integer, ForeignKey("data_sources.id"), nullable=False)
 
     # Data is either referenced by a URI (data_uri) or stored in-line as a
     # binary blob (data_blob).
