@@ -13,6 +13,7 @@ from sqlalchemy import (
     Unicode,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator
 
