@@ -1,15 +1,6 @@
 import json
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    LargeBinary,
-    Unicode,
-)
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, LargeBinary, Unicode
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
@@ -112,7 +103,8 @@ class Node(Timestamped, Base):
     structure = Column(JSONDict, nullable=True)
     metadata_ = Column("metadata", JSONDict, nullable=False)
     specs = Column(JSONList, nullable=False)
-    stale = Column(Boolean, default=False, nullable=False)
+
+    time_created = Column(DateTime(timezone=False), server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint("key", "parent", name="_key_parent_unique_constraint"),
@@ -176,3 +168,19 @@ class Asset(Timestamped):
     hash_content = Column(Unicode(1023), nullable=True)
 
     data_source = relationship("DataSource", back_populates="data_source")
+
+
+class Revisions(Timestamped, Base):
+    key = Column(Unicode(1023), index=True, nullable=False)
+    parent = Column(Unicode(1023), index=True, nullable=False)
+    revision = Column(Integer, index=True, nullable=False)
+
+    time_updated = Column(
+        DateTime(timezone=False), onupdate=func.now()
+    )  # null until first update
+
+    __table_args__ = (
+        UniqueConstraint(
+            "key", "parent", "revision", name="_key_parent_revision_unique_constraint"
+        ),
+    )
