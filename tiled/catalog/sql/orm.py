@@ -106,6 +106,8 @@ class Node(Timestamped, Base):
 
     time_created = Column(DateTime(timezone=False), server_default=func.now())
 
+    data_sources = relationship("DataSource", back_populates="node")
+
     __table_args__ = (
         UniqueConstraint("key", "parent", name="_key_parent_unique_constraint"),
     )
@@ -138,10 +140,11 @@ class DataSource(Timestamped, Base):
     # it to access and arrange the data in the file correctly.
     parameters = Column(JSONDict(1023), nullable=True)
 
-    node = relationship("Node", back_populates="node")
+    node = relationship("Node", back_populates="data_sources")
+    assets = relationship("Asset", back_populates="data_source")
 
 
-class Asset(Timestamped):
+class Asset(Timestamped, Base):
     """
     This tracks individual files/blobs.
 
@@ -167,13 +170,25 @@ class Asset(Timestamped):
     hash_type = Column(Unicode(63), nullable=True)
     hash_content = Column(Unicode(1023), nullable=True)
 
-    data_source = relationship("DataSource", back_populates="data_source")
+    data_source = relationship("DataSource", back_populates="assets")
 
 
 class Revisions(Timestamped, Base):
+    """
+    This tracks history of metadata and specs, supporting 'undo' functionaltiy.
+    """
+
+    __tablename__ = "revisions"
+
+    # This id is internal, never exposed to the user.
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
     key = Column(Unicode(1023), index=True, nullable=False)
     parent = Column(Unicode(1023), index=True, nullable=False)
     revision = Column(Integer, index=True, nullable=False)
+
+    metadata_ = Column("metadata", JSONDict, nullable=False)
+    specs = Column(JSONList, nullable=False)
 
     time_updated = Column(
         DateTime(timezone=False), onupdate=func.now()
