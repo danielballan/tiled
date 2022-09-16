@@ -14,10 +14,12 @@ class SQLAdapter:
         if node is None:
             self.metadata = {}
             self.structure_family = StructureFamily.node
+            self.structure = None
             self.specs = []
         else:
             self.metadata = node.metadata_
-            self.structure_family = node.structure_family
+            self.structure_family = StructureFamily(node.structure_family)
+            self.structure = node.structure
             self.specs = node.specs
         self._path = path or ()  # path parts as tuple
 
@@ -34,6 +36,9 @@ class SQLAdapter:
             # Scope to a session per thread.
             sm = scoped_session(sm)
         return cls(sm, None, None)
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self._path})"
 
     def post_metadata(self, metadata, structure_family, structure, specs):
         key = str(uuid.uuid4())
@@ -58,10 +63,15 @@ class SQLAdapter:
 
     def __getitem__(self, key):
         with self._sessionmaker() as db:
-            return next(
-                db.query(orm.Node).filter(
-                    key=key, parent="".join(f"/{segment}" for segment in self._path)
+            return type(self)(
+                self._sessionmaker,
+                db.query(orm.Node)
+                .filter(
+                    orm.Node.key == key,
+                    orm.Node.parent == "".join(f"/{segment}" for segment in self._path),
                 )
+                .first(),
+                self._path + (key,),
             )
 
 
