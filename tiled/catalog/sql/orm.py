@@ -97,8 +97,8 @@ class Node(Timestamped, Base):
     # This id is internal, never exposed to the user.
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
-    key = Column(Unicode(1023), index=True, nullable=False)
-    parent = Column(Unicode(1023), index=True, nullable=False)
+    key = Column(Unicode(1023), index=True, nullable=True)
+    parent = Column(Unicode(1023), index=True, nullable=True)
     structure_family = Column(Enum(StructureFamily), nullable=False)
     structure = Column(JSONDict, nullable=True)
     metadata_ = Column("metadata", JSONDict, nullable=False)
