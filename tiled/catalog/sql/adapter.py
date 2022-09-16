@@ -59,20 +59,52 @@ class SQLAdapter:
             db.add(node)
             db.commit()
             db.refresh(node)  # Refresh to sync back the auto-generated fields.
-        return type(self)(self._sessionmaker, node, self._path + (key,))
+        return construct_item(self._sessionmaker, node, self._path + (key,))
 
     def __getitem__(self, key):
         with self._sessionmaker() as db:
-            return type(self)(
-                self._sessionmaker,
+            node = (
                 db.query(orm.Node)
                 .filter(
                     orm.Node.key == key,
                     orm.Node.parent == "".join(f"/{segment}" for segment in self._path),
                 )
                 .first(),
-                self._path + (key,),
             )
+        return construct_item(self._sessionmaker, node, self._path + (key,))
+
+
+class ArrayAdapter:
+    def __init__(self, sessionmaker, node, path):
+        from ...structures.array import ArrayStructure
+
+        self._sessionmaker = sessionmaker
+        self.metadata = node.metadata_
+        assert node.structure_family == StructureFamily.array
+        self.structure = ArrayStructure.from_json(node.structure)
+        self.specs = node.specs
+        self._path = path  # path parts as tuple
+
+    def macrostructure(self):
+        return self.structure.macro
+
+    def microstructure(self):
+        return self.structure.micro
+
+
+_DISPATCH = {
+    StructureFamily.node: SQLAdapter,
+    StructureFamily.array: ArrayAdapter,
+}
+
+
+def construct_item(sessionmaker, node, path):
+    class_ = _DISPATCH[node.structure_family]
+    return class_(
+        sessionmaker,
+        node,
+        path,
+    )
 
 
 def initialize_database(engine):
