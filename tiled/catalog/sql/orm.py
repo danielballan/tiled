@@ -1,6 +1,6 @@
 import json
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, LargeBinary, Unicode
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, LargeBinary, Unicode
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
@@ -48,10 +48,10 @@ class JSONList(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        # Make sure we don't get passed some iterable like a dict.
-        if not isinstance(value, list):
-            raise ValueError("JSONList must be given a literal `list` type.")
         if value is not None:
+            # Make sure we don't get passed some iterable like a dict.
+            if not isinstance(value, list):
+                raise ValueError("JSONList must be given a literal `list` type.")
             value = json.dumps(value)
         return value
 
@@ -74,10 +74,10 @@ class JSONDict(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        # Make sure we don't get passed some iterable like a dict.
-        if not isinstance(value, dict):
-            raise ValueError("JSONDict must be given a literal `dict` type.")
         if value is not None:
+            # Make sure we don't get passed some iterable like a dict.
+            if not isinstance(value, dict):
+                raise ValueError("JSONDict must be given a literal `dict` type.")
             value = json.dumps(value)
         return value
 
@@ -139,6 +139,7 @@ class DataSource(Timestamped, Base):
     # These are additional parameters passed to the Adapter to guide
     # it to access and arrange the data in the file correctly.
     parameters = Column(JSONDict(1023), nullable=True)
+    externally_managed = Column(Boolean, default=False, nullable=False)
 
     node = relationship("Node", back_populates="data_sources")
     assets = relationship("Asset", back_populates="data_source")
