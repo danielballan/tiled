@@ -1,6 +1,15 @@
 import json
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, LargeBinary, Unicode
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    Unicode,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.sql import func
@@ -100,7 +109,6 @@ class Node(Timestamped, Base):
     key = Column(Unicode(1023), index=True, nullable=True)
     parent = Column(Unicode(1023), index=True, nullable=True)
     structure_family = Column(Enum(StructureFamily), nullable=False)
-    structure = Column(JSONDict, nullable=True)
     metadata_ = Column("metadata", JSONDict, nullable=False)
     specs = Column(JSONList, nullable=False)
 
@@ -132,9 +140,7 @@ class DataSource(Timestamped, Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     node_id = Column(Integer, ForeignKey("nodes.id"), nullable=False)
 
-    # For 'node' and 'dataframe' structures this tell us which field(s)
-    # this DataSource provides.
-    fields = Column(Unicode(4095), nullable=True)
+    structure = Column(JSONDict, nullable=True)
     mimetype = Column(Unicode(1023), nullable=False)
     # These are additional parameters passed to the Adapter to guide
     # it to access and arrange the data in the file correctly.
