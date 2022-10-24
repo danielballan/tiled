@@ -49,6 +49,7 @@ categorized_requirements = {
     for key in [
         "client",
         "compression",
+        "dev",
         "formats",
         "server",
         "array",
@@ -96,6 +97,7 @@ extras_require["server"] = sorted(
 )
 extras_require["minimal-client"] = categorized_requirements["client"]
 extras_require["minimal-server"] = categorized_requirements["server"]
+extras_require["dev"] = categorized_requirements["dev"]
 extras_require["formats"] = categorized_requirements["formats"]
 extras_require["all"] = extras_require["complete"] = sorted(
     set(sum(categorized_requirements.values(), []))
