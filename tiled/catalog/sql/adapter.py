@@ -1,17 +1,15 @@
-import time
+import collections.abc
 import uuid
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from ...adapters.array import slice_and_shape_from_block_and_chunks
+from ...iterviews import ItemsView, KeysView, ValuesView
 from ...structures.core import StructureFamily
 from ..utils import Layout
 from . import orm
 from .base import Base
-
-
-CACHED_NODE_TTL = 0.1  # seconds
 
 
 def create(uri, layout=Layout.scalable):
@@ -24,16 +22,7 @@ def create(uri, layout=Layout.scalable):
     if uri.startswith("sqlite"):
         # Scope to a session per thread.
         sm = scoped_session(sm)
-    with sm() as db:
-        node = (
-            db.query(orm.Node)
-            .filter(
-                orm.Node.key == "",
-                orm.Node.parent == "",
-            )
-            .first()
-        )
-    return NodeAdapter(sm, node, ())
+    return NodeAdapter(sm, ())
 
 
 def connect(uri):
@@ -45,30 +34,34 @@ def connect(uri):
     if uri.startswith("sqlite"):
         # Scope to a session per thread.
         sm = scoped_session(sm)
-    with sm() as db:
-        node = (
-            db.query(orm.Node)
-            .filter(
-                orm.Node.key == "",
-                orm.Node.parent == "",
-            )
-            .first()
-        )
-    return NodeAdapter(sm, node, ())
+    return NodeAdapter(sm, ())
 
 
 class BaseAdapter:
-
-    def __init__(self, sessionmaker, node, path):
+    def __init__(self, sessionmaker, path, node=None):
         self._sessionmaker = sessionmaker
-        self._node = node
         self._path = path  # path parts as tuple
-        self._parent = path[:-1]
-        if not self._path:
-            self._key = ""  # special case: root node
-        else:
-            self._key = path[-1]
-        self._deadline = 0
+        # Defer the database lookup because we may just be "passing through"
+        # on our way to a child node.
+        self._node = node
+
+    @property
+    def node(self):
+        if self._node is None:
+            if self._path:
+                *ancestors, key = self._path
+            else:
+                ancestors, key = None, ""
+            with self._sessionmaker() as db:
+                self._node = (
+                    db.query(orm.Node)
+                    .filter(
+                        orm.Node.key == key,
+                        orm.Node.ancestors == ancestors,
+                    )
+                    .first()
+                )
+        return self._node
 
     @property
     def metadata(self):
@@ -82,30 +75,12 @@ class BaseAdapter:
     def specs(self):
         return self.node.specs
 
-    @property
-    def node(self):
-        now = time.monotonic()
-        if now > self._deadline:
-            with self._sessionmaker() as db:
-                node = (
-                    db.query(orm.Node)
-                    .filter(
-                        orm.Node.key == self._key,
-                        orm.Node.parent == "".join(f"/{segment}" for segment in self._parent),
-                    )
-                    .first()
-                )
-            self._deadline = now + CACHED_NODE_TTL
-
-        return self._node
-
     def __repr__(self):
-        return f"{type(self).__name__}({self._path})"
+        return f"<{type(self).__name__} {self._path!s} >"
 
 
-class NodeAdapter(BaseAdapter):
-
-    def post_metadata(self, metadata, structure_family, structure, specs, data_sources):
+class NodeAdapter(BaseAdapter, collections.abc.Mapping):
+    def post_metadata(self, metadata, structure_family, structure, specs, references):
         key = str(uuid.uuid4())
         # if structure_family == StructureFamily.dataframe:
         #     # Initialize an empty DataFrame with the right columns/types.
@@ -115,21 +90,22 @@ class NodeAdapter(BaseAdapter):
         with self._sessionmaker() as db:
             node = orm.Node(
                 key=key,
-                parent="".join(f"/{segment}" for segment in self._path),
+                ancestors=self._path,
                 metadata_=metadata,
                 structure_family=structure_family,
-                structure=structure,
-                specs=specs,
+                specs=specs or [],
+                references=references or [],
             )
             db.add(node)
             db.commit()
             db.refresh(node)  # Refresh to sync back the auto-generated fields.
-        adapter = construct_item(self._sessionmaker, node, self._path + (key,))
-        adapter.initialize(data_sources)
+        adapter = construct_item(self._sessionmaker, node)
+        # adapter.initialize(data_sources)
         return adapter
 
-
     def put_data(self, body, block=None):
+        import numpy
+
         # Organize files into subdirectories with the first two
         # characters of the key to avoid one giant directory.
         if block:
@@ -144,28 +120,83 @@ class NodeAdapter(BaseAdapter):
         ).reshape(shape)
         self.array[slice_] = array
 
-
     def __getitem__(self, key):
         with self._sessionmaker() as db:
             node = (
                 db.query(orm.Node)
                 .filter(
                     orm.Node.key == key,
-                    orm.Node.parent == "".join(f"/{segment}" for segment in self._path),
+                    orm.Node.ancestors == self._path,
                 )
                 .first()
             )
-        return construct_item(self._sessionmaker, node, self._path + (key,))
+        if node is None:
+            raise KeyError(key)
+        return construct_item(self._sessionmaker, node)
+
+    def __iter__(self):
+        with self._sessionmaker() as db:
+            rows = db.query(orm.Node.key).filter(
+                orm.Node.ancestors == self._path,
+            )
+            for row in rows:
+                yield row[0]
+
+    def __len__(self):
+        with self._sessionmaker() as db:
+            return (
+                db.query(orm.Node.key)
+                .filter(
+                    orm.Node.ancestors == self._path,
+                )
+                .count()
+            )
+
+    def keys(self):
+        return KeysView(lambda: len(self), self._keys_slice)
+
+    def values(self):
+        return ValuesView(lambda: len(self), self._items_slice)
+
+    def items(self):
+        return ItemsView(lambda: len(self), self._items_slice)
+
+    # The following two methods are used by keys(), values(), items().
+
+    def _keys_slice(self, start, stop, direction):
+        with self._sessionmaker() as db:
+            rows = (
+                db.query(orm.Node.key)
+                .filter(
+                    orm.Node.ancestors == self._path,
+                )
+                .offset(start)
+                .limit(stop)
+            )
+        keys = [row[0] for row in rows]
+        return list(keys)
+
+    def _items_slice(self, start, stop, direction):
+        with self._sessionmaker() as db:
+            rows = (
+                db.query(orm.Node)
+                .filter(
+                    orm.Node.ancestors == self._path,
+                )
+                .offset(start)
+                .limit(stop)
+            )
+        items = [(row.key, construct_item(self._sessionmaker, row)) for row in rows]
+        return items
 
 
 class ArrayAdapter(BaseAdapter):
 
-    def initialize(self, data_sources):
-        if not data_sources:
-            data_source = {"
-        elif len(data_sources) > 1:
-            raise ValueError("An Array can only have one data source (but may span multiple assets).")
-
+    # def initialize(self, data_sources):
+    #     if not data_sources:
+    #         data_source = {"
+    #     elif len(data_sources) > 1:
+    #         raise ValueError("An Array can only have one data source (but may span multiple assets).")
 
     def macrostructure(self):
         return self.structure.macro
@@ -180,12 +211,13 @@ _DISPATCH = {
 }
 
 
-def construct_item(sessionmaker, node, path):
+def construct_item(sessionmaker, node):
     class_ = _DISPATCH[node.structure_family]
+    path = node.ancestors + [node.key]
     return class_(
         sessionmaker,
-        node,
         path,
+        node,
     )
 
 
@@ -202,11 +234,11 @@ def initialize_database(engine):
     with sm() as db:
         node = orm.Node(
             key="",
-            parent="",
+            ancestors=None,
             metadata_={},
             structure_family=StructureFamily.node,
-            structure=None,
             specs=[],
+            references=[],
         )
         db.add(node)
         db.commit()

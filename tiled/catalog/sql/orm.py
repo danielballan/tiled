@@ -59,8 +59,10 @@ class JSONList(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is not None:
             # Make sure we don't get passed some iterable like a dict.
-            if not isinstance(value, list):
-                raise ValueError("JSONList must be given a literal `list` type.")
+            if not isinstance(value, (list, tuple)):
+                raise ValueError(
+                    "JSONList must be given a literal `list` or `tuple` type."
+                )
             value = json.dumps(value)
         return value
 
@@ -106,18 +108,19 @@ class Node(Timestamped, Base):
     # This id is internal, never exposed to the user.
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
-    key = Column(Unicode(1023), index=True, nullable=True)
-    parent = Column(Unicode(1023), index=True, nullable=True)
+    key = Column(Unicode(1023), index=True, nullable=False)
+    ancestors = Column(JSONList(2**16 - 1), index=True, nullable=True)
     structure_family = Column(Enum(StructureFamily), nullable=False)
     metadata_ = Column("metadata", JSONDict, nullable=False)
     specs = Column(JSONList, nullable=False)
+    references = Column(JSONList, nullable=False)
 
     time_created = Column(DateTime(timezone=False), server_default=func.now())
 
     data_sources = relationship("DataSource", back_populates="node")
 
     __table_args__ = (
-        UniqueConstraint("key", "parent", name="_key_parent_unique_constraint"),
+        UniqueConstraint("key", "ancestors", name="_key_ancestors_unique_constraint"),
     )
 
 
@@ -191,7 +194,7 @@ class Revisions(Timestamped, Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     key = Column(Unicode(1023), index=True, nullable=False)
-    parent = Column(Unicode(1023), index=True, nullable=False)
+    ancestors = Column(JSONList(2**16), index=True, nullable=True)
     revision = Column(Integer, index=True, nullable=False)
 
     metadata_ = Column("metadata", JSONDict, nullable=False)
@@ -203,6 +206,9 @@ class Revisions(Timestamped, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "key", "parent", "revision", name="_key_parent_revision_unique_constraint"
+            "key",
+            "ancestors",
+            "revision",
+            name="_key_ancestors_revision_unique_constraint",
         ),
     )

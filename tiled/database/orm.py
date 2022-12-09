@@ -220,4 +220,3 @@ class PendingSession(Base):
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
 
     session = relationship("Session")
-
