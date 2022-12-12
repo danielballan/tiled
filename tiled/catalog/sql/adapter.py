@@ -75,6 +75,10 @@ class BaseAdapter:
     def specs(self):
         return self.node.specs
 
+    @property
+    def references(self):
+        return self.node.references
+
     def __repr__(self):
         return f"<{type(self).__name__} {self._path!s} >"
 
@@ -193,6 +197,17 @@ class NodeAdapter(BaseAdapter, collections.abc.Mapping):
             )
         items = [(row.key, construct_item(self._sessionmaker, row)) for row in rows]
         return items
+
+    # def read(self, fields=None):
+    #     if fields is not None:
+    #         new_mapping = {}
+    #         for field in fields:
+    #             new_mapping[field] = self._mapping[field]
+    #         return self.new_variation(mapping=new_mapping)
+    #     return self
+
+    # def search(self, ...):
+    #     ...
 
 
 class ArrayAdapter(BaseAdapter):
