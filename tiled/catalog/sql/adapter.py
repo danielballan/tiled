@@ -80,8 +80,13 @@ class BaseAdapter:
 
 
 class NodeAdapter(BaseAdapter, collections.abc.Mapping):
+    def new_key(self):
+        "This is used to generate names for new child nodes."
+        # This is broken out into a separate method to make it easy to override.
+        return str(uuid.uuid4())
+
     def post_metadata(self, metadata, structure_family, structure, specs, references):
-        key = str(uuid.uuid4())
+        key = self.new_key()
         # if structure_family == StructureFamily.dataframe:
         #     # Initialize an empty DataFrame with the right columns/types.
         #     meta = deserialize_arrow(structure.micro.meta)
