@@ -108,9 +108,8 @@ class NodeAdapter(BaseAdapter, collections.abc.Mapping):
             db.add(node)
             db.commit()
             db.refresh(node)  # Refresh to sync back the auto-generated fields.
-        adapter = construct_item(self._sessionmaker, node)
-        # adapter.initialize(data_sources)
-        return adapter
+        construct_item(self._sessionmaker, node)
+        return key
 
     def put_data(self, body, block=None):
         import numpy
