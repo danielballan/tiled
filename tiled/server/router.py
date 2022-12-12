@@ -642,6 +642,7 @@ def post_metadata(
             metadata = result
 
     key = entry.post_metadata(
+        externally_managed=body.externally_managed,
         metadata=body.metadata,
         structure_family=body.structure_family,
         structure=body.structure,

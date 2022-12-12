@@ -566,6 +566,7 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
         references = references or []
         item = {
             "attributes": {
+                "externally_managed": False,
                 "metadata": metadata,
                 "structure": asdict(structure),
                 "structure_family": StructureFamily(structure_family),

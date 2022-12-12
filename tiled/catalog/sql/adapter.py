@@ -89,7 +89,15 @@ class NodeAdapter(BaseAdapter, collections.abc.Mapping):
         # This is broken out into a separate method to make it easy to override.
         return str(uuid.uuid4())
 
-    def post_metadata(self, metadata, structure_family, structure, specs, references):
+    def post_metadata(
+        self,
+        externally_managed,
+        metadata,
+        structure_family,
+        structure,
+        specs,
+        references,
+    ):
         key = self.new_key()
         # if structure_family == StructureFamily.dataframe:
         #     # Initialize an empty DataFrame with the right columns/types.
