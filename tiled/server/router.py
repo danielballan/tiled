@@ -673,6 +673,8 @@ def post_metadata(
             "partition"
         ] = f"{base_url}/dataframe/partition/{path_str}?partition={{index}}"
         links["full"] = f"{base_url}/node/full/{path_str}"
+    elif body.structure_family == StructureFamily.node:
+        links["full"] = f"{base_url}/node/full/{path_str}"
     else:
         raise NotImplementedError(body.structure_family)
     response_data = {"id": key, "links": links}

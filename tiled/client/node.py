@@ -552,6 +552,7 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
 
         See Also
         --------
+        create_node
         write_array
         write_dataframe
         write_coo_array
@@ -568,7 +569,7 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
             "attributes": {
                 "externally_managed": False,
                 "metadata": metadata,
-                "structure": asdict(structure),
+                "structure": asdict(structure) if structure is not None else None,
                 "structure_family": StructureFamily(structure_family),
                 "specs": normalized_specs,
                 "references": references,
@@ -590,6 +591,12 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
         if "metadata" in document:
             item["attributes"]["metadata"] = document.pop("metadata")
 
+        # This may need more thought. For now, we always POST the structure null
+        # (above) but we update the local item with what the server would have
+        # sent for "empty node".
+        if structure_family == StructureFamily.node:
+            item["attributes"]["structure"] = {"contents": None, "count": 0}
+
         # Merge in "id" and "links" returned by the server.
         item.update(document)
 
@@ -604,6 +611,33 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
     # to attempt to avoid bumping into size limits.
     _SUGGESTED_MAX_UPLOAD_SIZE = 100_000_000  # 100 MB
 
+    def create_node(self, metadata=None, specs=None, references=None):
+        """
+        EXPERIMENTAL: Write an array.
+
+        Parameters
+        ----------
+        metadata : dict, optional
+            User metadata. May be nested. Must contain only basic types
+            (e.g. numbers, strings, lists, dicts) that are JSON-serializable.
+        specs : List[Spec], optional
+            List of names that are used to label that the data and/or metadata
+            conform to some named standard specification.
+        references : List[Dict[str, URL]], optional
+            References (e.g. links) to related information. This may include
+            links into other Tiled data sets, search results, or external
+            resources unrelated to Tiled.
+
+        """
+
+        return self.new(
+            StructureFamily.node,
+            None,
+            metadata=metadata,
+            specs=specs,
+            references=references,
+        )
+
     def write_array(self, array, metadata=None, dims=None, specs=None, references=None):
         """
         EXPERIMENTAL: Write an array.
@@ -611,8 +645,6 @@ class Node(BaseClient, collections.abc.Mapping, IndexersMixin):
         Parameters
         ----------
         array : array-like
-        metadata : dict, optional
-            User metadata. May be nested. Must contain only basic types
             (e.g. numbers, strings, lists, dicts) that are JSON-serializable.
         dims : List[str], optional
             A label for each dimension of the array.

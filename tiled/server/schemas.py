@@ -305,12 +305,36 @@ class APIKeyRequestParams(pydantic.BaseModel):
     note: Optional[str]
 
 
+# Map structure family to the associated
+# structure model. This is used by the validator.
+structure_association = {
+    StructureFamily.array: ArrayStructure,
+    StructureFamily.dataframe: DataFrameStructure,
+    StructureFamily.sparse: SparseStructure,
+    StructureFamily.node: type(None),
+}
+
+
 class PostMetadataRequest(pydantic.BaseModel):
+    externally_managed: bool
     structure_family: StructureFamily
-    structure: Union[ArrayStructure, DataFrameStructure, SparseStructure]
+    structure: Union[ArrayStructure, DataFrameStructure, SparseStructure, type(None)]
     metadata: Dict = {}
     specs: Specs = []
     references: References = []
+
+    @pydantic.root_validator
+    def validate_structure_matches_structure_family(cls, values):
+        actual_structure = values.get("structure")
+        # Given the structure_family, we know what the structure type should be.
+        expected_structure_type = structure_association[values.get("structure_family")]
+        if not isinstance(actual_structure, expected_structure_type):
+            raise Exception(
+                f"The expected structure type {expected_structure_type} "
+                "does not match the received structure type "
+                f"{type(actual_structure).__name__}."
+            )
+        return values
 
     # Wait for fix https://github.com/pydantic/pydantic/issues/3957
     # to do this with `unique_items` parameters to `pydantic.constr`.
