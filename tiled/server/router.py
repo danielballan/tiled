@@ -675,6 +675,7 @@ def post_metadata(
         links["full"] = f"{base_url}/node/full/{path_str}"
     elif body.structure_family == StructureFamily.node:
         links["full"] = f"{base_url}/node/full/{path_str}"
+        links["search"] = f"{base_url}/node/search/{path_str}"
     else:
         raise NotImplementedError(body.structure_family)
     response_data = {"id": key, "links": links}
