@@ -157,13 +157,6 @@ class DataSource(Timestamped, Base):
 class Asset(Timestamped, Base):
     """
     This tracks individual files/blobs.
-
-    It intended for introspection and forensics. It is not actually used
-    when doing routine data access.
-
-    Importantly, it does so without any code execution. For example, it will
-    include all the HDF5 subsidiary files for HDF5 files that use external
-    links.
     """
 
     __tablename__ = "assets"
