@@ -175,6 +175,7 @@ def construct_build_app_kwargs(
         server_settings["reject_undeclared_specs"] = config.get(
             "reject_undeclared_specs"
         )
+        server_settings["response_cache"] = config.get("response_cache")
         server_settings["metrics"] = config.get("metrics", {})
         for structure_family, values in config.get("media_types", {}).items():
             for media_type, import_path in values.items():
@@ -221,6 +222,7 @@ def merge(configs):
     media_types = defaultdict(dict)
     specs = []
     reject_undeclared_specs_source = None
+    response_cache_source = None
     file_extensions = {}
     paths = {}  # map each item's path to config file that specified it
 
@@ -302,6 +304,15 @@ def merge(configs):
                 )
             reject_undeclared_specs_source = filepath
             merged["reject_undeclared_specs"] = config["reject_undeclared_specs"]
+        if "response_cache" in config:
+            if "response_cache" in merged:
+                raise ConfigError(
+                    "'response_cache' can only be specified in one file. "
+                    f"It was found in both {response_cache_source} and "
+                    f"{filepath}"
+                )
+            response_cache_source = filepath
+            merged["response_cache"] = config["response_cache"]
         for item in config.get("trees", []):
             if item["path"] in paths:
                 msg = "A given path may be only be specified once."

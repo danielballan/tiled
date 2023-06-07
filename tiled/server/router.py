@@ -307,9 +307,11 @@ async def node_metadata(
     omit_links: bool = Query(False),
     entry: Any = SecureEntry(scopes=["read:metadata"]),
     root_path: bool = Query(False),
+    redis_client: Any = Depends(get_redis_client),
 ):
     "Fetch the metadata and structure information for one entry."
 
+    # Do something with redis client.
     request.state.endpoint = "metadata"
     base_url = get_base_url(request)
     path_parts = [segment for segment in path.split("/") if segment]

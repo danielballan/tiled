@@ -385,6 +385,11 @@ or via the environment variable TILED_SINGLE_USER_API_KEY.""",
             setattr(
                 settings, "object_cache_available_bytes", object_cache_available_bytes
             )
+        response_cache_redis_url = server_settings.get("response_cache", {}).get(
+            "redis_url"
+        )
+        if response_cache_redis_url is not None:
+            setattr(settings, "response_cache_redis_url", response_cache_redis_url)
         if authentication.get("providers"):
             # If we support authentication providers, we need a database, so if one is
             # not set, use a SQLite database in memory. Horizontally scaled deployments
@@ -455,6 +460,9 @@ or via the environment variable TILED_SINGLE_USER_API_KEY.""",
                 f"Will use up to {object_cache_available_bytes:_} bytes ({percentage:d}% of total physical RAM)"
             )
         set_object_cache(cache)
+
+        # Connect to response cache.
+        print(f"Connect to {settings.response_cache_redis_url}")
 
         # Expose the root_tree here to make it easier to access it from tests,
         # in usages like:

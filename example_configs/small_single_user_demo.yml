@@ -3,3 +3,5 @@ authentication:
 trees:
   - tree: tiled.examples.generated_minimal:tree
     path: /
+response_cache:
+  redis_url: redis://localhost:6379

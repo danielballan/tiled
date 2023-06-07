@@ -5,7 +5,7 @@ from datetime import timedelta
 from functools import lru_cache
 from typing import Any, List, Optional
 
-from pydantic import BaseSettings
+from pydantic import AnyUrl, BaseSettings
 
 DatabaseSettings = collections.namedtuple(
     "DatabaseSettings", "uri pool_size pool_pre_ping max_overflow"
@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     object_cache_available_bytes = float(
         os.getenv("TILED_OBJECT_CACHE_AVAILABLE_BYTES", "0.15")
     )
+    response_cache_redis_url: AnyUrl = os.getenv("TILED_RESPONSE_CACHE_REDIS_URL", None)
     object_cache_log_level = os.getenv("TILED_OBJECT_CACHE_LOG_LEVEL", "INFO")
     authenticator: Any = None
     # These 'single user' settings are only applicable if authenticator is None.
