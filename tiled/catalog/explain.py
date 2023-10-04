@@ -1,12 +1,14 @@
 "Adapted from https://github.com/sqlalchemy/sqlalchemy/wiki/Query-Plan-SQL-construct"
 import contextlib
 import os
+import sys
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import ClauseElement, Executable
 
 EXPLAIN_SQL = bool(int(os.getenv("TILED_EXPLAIN_SQL", "0") or "0"))
+ECHO_SQL = bool(int(os.getenv("TILED_ECHO_SQL", "0") or "0"))
 
 
 class _explain(Executable, ClauseElement):
@@ -37,7 +39,13 @@ def sqlite_explain(element, compiler, **kw):
     return text
 
 
+def echo_explanation(e):
+    print(f"EXPLANATION: {e}", file=sys.stderr)
+
+
 _query_explanation_callbacks = []
+if ECHO_SQL:
+    _query_explanation_callbacks.append(echo_explanation)
 
 
 @contextlib.contextmanager
@@ -56,7 +64,7 @@ class ExplainAsyncSession(AsyncSession):
     """
     Extend AsyncSession to explain and then query.
 
-    If EXPLAIN_SQL is off and there are now callbacks, just fall back
+    If EXPLAIN_SQL is off and there are no callbacks, just fall back
     to normal AsyncSession. For performance reasons, we only query
     for the explanation if it will be used.
 
