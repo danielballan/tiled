@@ -14,6 +14,7 @@ from ..queries import KeyLookup
 from ..query_registration import query_registry
 from ..structures.core import Spec, StructureFamily
 from ..structures.data_source import DataSource
+from ..structures.union import UnionStructure, UnionStructureItem
 from ..utils import UNCHANGED, OneShotCachedMap, Sentinel, node_repr, safe_json_dump
 from .base import STRUCTURE_TYPES, BaseClient
 from .utils import (
@@ -620,8 +621,18 @@ class Container(BaseClient, collections.abc.Mapping, IndexersMixin):
         ).json()
         if structure_family == StructureFamily.container:
             structure = {"contents": None, "count": None}
+        elif structure_family == StructureFamily.union:
+            structure = UnionStructure(
+                contents=[
+                    UnionStructureItem(
+                        structure=data_source.structure,
+                        structure_family=data_source.structure_family,
+                        key=data_source.key,
+                    )
+                    for data_source in data_sources
+                ]
+            )
         else:
-            # Only containers can have multiple data_sources right now.
             (data_source,) = data_sources
             structure = data_source.structure
         item["attributes"]["structure"] = structure
@@ -671,6 +682,31 @@ class Container(BaseClient, collections.abc.Mapping, IndexersMixin):
         return self.new(
             StructureFamily.container,
             [],
+            key=key,
+            metadata=metadata,
+            specs=specs,
+        )
+
+    def create_union(self, data_sources, key=None, *, metadata=None, specs=None):
+        """
+        EXPERIMENTAL: Create a new union backed by data sources.
+
+        Parameters
+        ----------
+        data_sources : List[DataSources]
+        metadata : dict, optional
+            User metadata. May be nested. Must contain only basic types
+            (e.g. numbers, strings, lists, dicts) that are JSON-serializable.
+        dims : List[str], optional
+            A label for each dimension of the array.
+        specs : List[Spec], optional
+            List of names that are used to label that the data and/or metadata
+            conform to some named standard specification.
+
+        """
+        return self.new(
+            StructureFamily.union,
+            data_sources,
             key=key,
             metadata=metadata,
             specs=specs,
@@ -1018,6 +1054,7 @@ DEFAULT_STRUCTURE_CLIENT_DISPATCH = {
             "table": _LazyLoad(
                 ("..dataframe", Container.__module__), "DataFrameClient"
             ),
+            "union": _LazyLoad(("..union", Container.__module__), "UnionClient"),
             "xarray_dataset": _LazyLoad(
                 ("..xarray", Container.__module__), "DatasetClient"
             ),
@@ -1036,6 +1073,7 @@ DEFAULT_STRUCTURE_CLIENT_DISPATCH = {
             "table": _LazyLoad(
                 ("..dataframe", Container.__module__), "DaskDataFrameClient"
             ),
+            "union": _LazyLoad(("..union", Container.__module__), "UnionClient"),
             "xarray_dataset": _LazyLoad(
                 ("..xarray", Container.__module__), "DaskDatasetClient"
             ),

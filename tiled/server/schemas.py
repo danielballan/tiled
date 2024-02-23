@@ -16,6 +16,7 @@ from .pydantic_array import ArrayStructure
 from .pydantic_awkward import AwkwardStructure
 from .pydantic_sparse import SparseStructure
 from .pydantic_table import TableStructure
+from .pydantic_union import UnionStructure
 
 DataT = TypeVar("DataT")
 LinksT = TypeVar("LinksT")
@@ -137,15 +138,17 @@ class DataSource(pydantic.BaseModel):
         Union[
             ArrayStructure,
             AwkwardStructure,
-            TableStructure,
             NodeStructure,
             SparseStructure,
+            TableStructure,
+            UnionStructure,
         ]
     ] = None
     mimetype: Optional[str] = None
     parameters: dict = {}
     assets: List[Asset] = []
     management: Management = Management.writable
+    key: Optional[str] = None
 
     @classmethod
     def from_orm(cls, orm):
@@ -157,6 +160,7 @@ class DataSource(pydantic.BaseModel):
             parameters=orm.parameters,
             assets=[Asset.from_assoc_orm(assoc) for assoc in orm.asset_associations],
             management=orm.management,
+            key=orm.key,
         )
 
 
@@ -169,9 +173,10 @@ class NodeAttributes(pydantic.BaseModel):
         Union[
             ArrayStructure,
             AwkwardStructure,
-            TableStructure,
             NodeStructure,
             SparseStructure,
+            TableStructure,
+            UnionStructure,
         ]
     ]
     sorting: Optional[List[SortingItem]]
@@ -217,12 +222,17 @@ class SparseLinks(pydantic.BaseModel):
     block: str
 
 
+class UnionLinks(pydantic.BaseModel):
+    self: str
+
+
 resource_links_type_by_structure_family = {
-    StructureFamily.container: ContainerLinks,
     StructureFamily.array: ArrayLinks,
     StructureFamily.awkward: AwkwardLinks,
-    StructureFamily.table: DataFrameLinks,
+    StructureFamily.container: ContainerLinks,
     StructureFamily.sparse: SparseLinks,
+    StructureFamily.table: DataFrameLinks,
+    StructureFamily.union: UnionLinks,
 }
 
 

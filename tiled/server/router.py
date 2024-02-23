@@ -1194,6 +1194,8 @@ async def _create_node(
     elif body.structure_family == StructureFamily.awkward:
         links["buffers"] = f"{base_url}/awkward/buffers/{path_str}"
         links["full"] = f"{base_url}/awkward/full/{path_str}"
+    elif body.structure_family == StructureFamily.union:
+        pass  # TODO
     else:
         raise NotImplementedError(body.structure_family)
     response_data = {

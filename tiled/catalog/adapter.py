@@ -44,6 +44,7 @@ from ..mimetypes import (
 from ..query_registration import QueryTranslationRegistry
 from ..server.schemas import Asset, DataSource, Management, Revision, Spec
 from ..structures.core import StructureFamily
+from ..structures.union import UnionStructure, UnionStructureItem
 from ..utils import (
     SCHEME_PATTERN,
     UNCHANGED,
@@ -344,6 +345,17 @@ class CatalogNodeAdapter:
         return Asset.from_orm(asset)
 
     def structure(self):
+        if self.structure_family == StructureFamily.union:
+            return UnionStructure(
+                contents=[
+                    UnionStructureItem(
+                        structure=data_source.structure,
+                        structure_family=data_source.structure_family,
+                        key=data_source.key,
+                    )
+                    for data_source in self.data_sources
+                ]
+            )
         if self.data_sources:
             assert len(self.data_sources) == 1  # more not yet implemented
             return self.data_sources[0].structure
@@ -359,7 +371,9 @@ class CatalogNodeAdapter:
             return (await db.execute(statement)).scalar_one()
 
     async def lookup_adapter(
-        self, segments
+        self,
+        segments,
+        data_source_id=None,
     ):  # TODO: Accept filter for predicate-pushdown.
         if not segments:
             return self
@@ -400,7 +414,7 @@ class CatalogNodeAdapter:
             for i in range(len(segments)):
                 catalog_adapter = await self.lookup_adapter(segments[:i])
                 if catalog_adapter.data_sources:
-                    adapter = await catalog_adapter.get_adapter()
+                    adapter = await catalog_adapter.get_adapter(data_source_id)
                     for segment in segments[i:]:
                         adapter = await anyio.to_thread.run_sync(adapter.get, segment)
                         if adapter is None:
@@ -603,12 +617,14 @@ class CatalogNodeAdapter:
                 if data_source.management != Management.external:
                     if structure_family == StructureFamily.container:
                         raise NotImplementedError(structure_family)
-                    data_source.mimetype = DEFAULT_CREATION_MIMETYPE[structure_family]
+                    data_source.mimetype = DEFAULT_CREATION_MIMETYPE[
+                        data_source.structure_family
+                    ]
                     data_source.parameters = {}
                     data_uri = str(self.context.writable_storage) + "".join(
                         f"/{quote_plus(segment)}" for segment in (self.segments + [key])
                     )
-                    init_storage = DEFAULT_INIT_STORAGE[structure_family]
+                    init_storage = DEFAULT_INIT_STORAGE[data_source.structure_family]
                     assets = await ensure_awaitable(
                         init_storage, data_uri, data_source.structure
                     )
@@ -628,7 +644,7 @@ class CatalogNodeAdapter:
                     # Obtain and hash the canonical (RFC 8785) representation of
                     # the JSON structure.
                     structure = _prepare_structure(
-                        structure_family, data_source.structure
+                        data_source.structure_family, data_source.structure
                     )
                     structure_id = compute_structure_id(structure)
                     # The only way to do "insert if does not exist" i.e. ON CONFLICT
@@ -977,7 +993,11 @@ class CatalogTableAdapter(CatalogNodeAdapter):
 
 class CatalogUnionAdapter(CatalogNodeAdapter):
     # This does not support direct reading or writing.
-    pass
+
+    def get(self, key):
+        pass
+        # breakpoint()
+        # Find the key in self.data_sources
 
 
 def delete_asset(data_uri, is_directory):

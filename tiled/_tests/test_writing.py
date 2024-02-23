@@ -19,9 +19,10 @@ from ..catalog import in_memory
 from ..client import Context, from_context, record_history
 from ..queries import Key
 from ..server.app import build_app
-from ..structures.core import Spec
+from ..structures.core import Spec, StructureFamily
 from ..structures.data_source import DataSource
 from ..structures.sparse import COOStructure
+from ..structures.table import TableStructure
 from ..validation_registration import ValidationRegistry
 from .utils import fail_with_status_code
 
@@ -451,3 +452,15 @@ async def test_container_export(tree):
         a.write_array([1, 2, 3], key="b")
         buffer = io.BytesIO()
         client.export(buffer, format="application/json")
+
+
+def test_union_one_table(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df = pandas.DataFrame({"A": [], "B": []})
+        structure = TableStructure.from_pandas(df)
+        data_source = DataSource(
+            structure_family=StructureFamily.table,
+            structure=structure,
+        )
+        client.create_union([data_source], key="x")

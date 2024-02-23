@@ -30,3 +30,4 @@ class DataSource:
     parameters: dict = dataclasses.field(default_factory=dict)
     assets: List[Asset] = dataclasses.field(default_factory=list)
     management: Management = Management.writable
+    key: Optional[str] = None
