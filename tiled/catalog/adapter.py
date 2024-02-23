@@ -42,9 +42,10 @@ from ..mimetypes import (
     ZARR_MIMETYPE,
 )
 from ..query_registration import QueryTranslationRegistry
+from ..server.pydantic_container import ContainerStructure
+from ..server.pydantic_union import UnionStructure, UnionStructureItem
 from ..server.schemas import Asset, DataSource, Management, Revision, Spec
 from ..structures.core import StructureFamily
-from ..structures.union import UnionStructure, UnionStructureItem
 from ..utils import (
     SCHEME_PATTERN,
     UNCHANGED,
@@ -345,10 +346,14 @@ class CatalogNodeAdapter:
         return Asset.from_orm(asset)
 
     def structure(self):
+        if self.structure_family == StructureFamily.container:
+            # Give no inlined contents.
+            return ContainerStructure(contents=None, count=None)
         if self.structure_family == StructureFamily.union:
             return UnionStructure(
                 contents=[
                     UnionStructureItem(
+                        data_source_id=data_source.id,
                         structure=data_source.structure,
                         structure_family=data_source.structure_family,
                         key=data_source.key,

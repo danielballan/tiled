@@ -413,7 +413,15 @@ class PostMetadataRequest(pydantic.BaseModel):
 
 class PostMetadataResponse(pydantic.BaseModel, Generic[ResourceLinksT]):
     id: str
-    links: Union[ArrayLinks, DataFrameLinks, SparseLinks]
+    links: Union[ArrayLinks, DataFrameLinks, SparseLinks, UnionLinks]
+    structure: Union[
+        ArrayStructure,
+        AwkwardStructure,
+        NodeStructure,
+        SparseStructure,
+        TableStructure,
+        UnionStructure,
+    ]
     metadata: Dict
     data_sources: List[DataSource]
 

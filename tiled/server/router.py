@@ -14,6 +14,7 @@ from pydantic import BaseSettings
 from starlette.responses import FileResponse
 
 from .. import __version__
+from ..server.pydantic_union import UnionStructure, UnionStructureItem
 from ..structures.core import StructureFamily
 from ..utils import ensure_awaitable, path_from_uri
 from ..validation_registration import ValidationError
@@ -1129,14 +1130,24 @@ async def _create_node(
         body.structure_family,
         body.specs,
     )
-    if structure_family == StructureFamily.container:
-        structure = None
-    else:
-        if len(body.data_sources) != 1:
-            raise NotImplementedError
-        structure = body.data_sources[0].structure
-
     metadata_modified = False
+    if structure_family == StructureFamily.union:
+        structure = UnionStructure(
+            contents=[
+                UnionStructureItem(
+                    data_source_id=data_source.id,
+                    structure=data_source.structure,
+                    structure_family=data_source.structure_family,
+                    key=data_source.key,
+                )
+                for data_source in body.data_sources
+            ]
+        )
+    elif body.data_sources:
+        assert len(body.data_sources) == 1  # more not yet implemented
+        structure = body.data_sources[0].structure
+    else:
+        structure = None
 
     # Specs should be ordered from most specific/constrained to least.
     # Validate them in reverse order, with the least constrained spec first,
@@ -1198,10 +1209,14 @@ async def _create_node(
         pass  # TODO
     else:
         raise NotImplementedError(body.structure_family)
+    structure = node.structure()
+    if structure is not None:
+        structure = structure.dict()
     response_data = {
         "id": key,
         "links": links,
         "data_sources": [ds.dict() for ds in node.data_sources],
+        "structure": structure,
     }
     if metadata_modified:
         response_data["metadata"] = metadata
