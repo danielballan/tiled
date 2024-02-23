@@ -411,63 +411,69 @@ class CatalogNodeAdapter:
             self.context, node, access_policy=self.access_policy
         )
 
-    async def get_adapter(self):
+    async def get_adapter(self, data_source_id=None):
         num_data_sources = len(self.data_sources)
-        if num_data_sources > 1:
-            raise NotImplementedError
-        if num_data_sources == 1:
-            (data_source,) = self.data_sources
-            try:
-                adapter_factory = self.context.adapters_by_mimetype[
-                    data_source.mimetype
-                ]
-            except KeyError:
-                raise RuntimeError(
-                    f"Server configuration has no adapter for mimetype {data_source.mimetype!r}"
+        if data_source_id is not None:
+            for data_source in self.data_sources:
+                if data_source_id == data_source.id:
+                    break
+            else:
+                raise ValueError(
+                    f"No such data_source_id {data_source_id} on this node"
                 )
-            parameters = collections.defaultdict(list)
-            for asset in data_source.assets:
-                if asset.parameter is None:
-                    continue
-                scheme = urlparse(asset.data_uri).scheme
-                if scheme != "file":
-                    raise NotImplementedError(
-                        f"Only 'file://...' scheme URLs are currently supported, not {asset.data_uri}"
-                    )
-                if scheme == "file":
-                    # Protect against misbehaving clients reading from unintended
-                    # parts of the filesystem.
-                    asset_path = path_from_uri(asset.data_uri)
-                    for readable_storage in self.context.readable_storage:
-                        if Path(
-                            os.path.commonpath(
-                                [path_from_uri(readable_storage), asset_path]
-                            )
-                        ) == path_from_uri(readable_storage):
-                            break
-                    else:
-                        raise RuntimeError(
-                            f"Refusing to serve {asset.data_uri} because it is outside "
-                            "the readable storage area for this server."
-                        )
-                if asset.num is None:
-                    parameters[asset.parameter] = asset.data_uri
-                else:
-                    parameters[asset.parameter].append(asset.data_uri)
-            adapter_kwargs = dict(parameters)
-            adapter_kwargs.update(data_source.parameters)
-            adapter_kwargs["specs"] = self.node.specs
-            adapter_kwargs["metadata"] = self.node.metadata_
-            adapter_kwargs["structure"] = data_source.structure
-            adapter_kwargs["access_policy"] = self.access_policy
-            adapter = await anyio.to_thread.run_sync(
-                partial(adapter_factory, **adapter_kwargs)
+        elif num_data_sources > 1:
+            raise ValueError(
+                "A data_source_id is required because this node "
+                f"has {num_data_sources} data sources"
             )
-            for query in self.queries:
-                adapter = adapter.search(query)
-            return adapter
-        else:  # num_data_sources == 0
-            assert False
+        (data_source,) = self.data_sources
+        try:
+            adapter_factory = self.context.adapters_by_mimetype[data_source.mimetype]
+        except KeyError:
+            raise RuntimeError(
+                f"Server configuration has no adapter for mimetype {data_source.mimetype!r}"
+            )
+        parameters = collections.defaultdict(list)
+        for asset in data_source.assets:
+            if asset.parameter is None:
+                continue
+            scheme = urlparse(asset.data_uri).scheme
+            if scheme != "file":
+                raise NotImplementedError(
+                    f"Only 'file://...' scheme URLs are currently supported, not {asset.data_uri}"
+                )
+            if scheme == "file":
+                # Protect against misbehaving clients reading from unintended
+                # parts of the filesystem.
+                asset_path = path_from_uri(asset.data_uri)
+                for readable_storage in self.context.readable_storage:
+                    if Path(
+                        os.path.commonpath(
+                            [path_from_uri(readable_storage), asset_path]
+                        )
+                    ) == path_from_uri(readable_storage):
+                        break
+                else:
+                    raise RuntimeError(
+                        f"Refusing to serve {asset.data_uri} because it is outside "
+                        "the readable storage area for this server."
+                    )
+            if asset.num is None:
+                parameters[asset.parameter] = asset.data_uri
+            else:
+                parameters[asset.parameter].append(asset.data_uri)
+        adapter_kwargs = dict(parameters)
+        adapter_kwargs.update(data_source.parameters)
+        adapter_kwargs["specs"] = self.node.specs
+        adapter_kwargs["metadata"] = self.node.metadata_
+        adapter_kwargs["structure"] = data_source.structure
+        adapter_kwargs["access_policy"] = self.access_policy
+        adapter = await anyio.to_thread.run_sync(
+            partial(adapter_factory, **adapter_kwargs)
+        )
+        for query in self.queries:
+            adapter = adapter.search(query)
+        return adapter
 
     def new_variation(
         self,
@@ -969,6 +975,11 @@ class CatalogTableAdapter(CatalogNodeAdapter):
         )
 
 
+class CatalogUnionAdapter(CatalogNodeAdapter):
+    # This does not support direct reading or writing.
+    pass
+
+
 def delete_asset(data_uri, is_directory):
     url = urlparse(data_uri)
     if url.scheme == "file":
@@ -1312,4 +1323,5 @@ STRUCTURES = {
     StructureFamily.container: CatalogContainerAdapter,
     StructureFamily.sparse: CatalogSparseAdapter,
     StructureFamily.table: CatalogTableAdapter,
+    StructureFamily.union: CatalogUnionAdapter,
 }
