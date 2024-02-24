@@ -9,6 +9,15 @@ from dataclasses import asdict, dataclass
 from typing import Optional
 
 
+class BaseStructureFamily(str, enum.Enum):
+    array = "array"
+    awkward = "awkward"
+    container = "container"
+    sparse = "sparse"
+    table = "table"
+    # excludes union, which DataSources cannot have
+
+
 class StructureFamily(str, enum.Enum):
     array = "array"
     awkward = "awkward"

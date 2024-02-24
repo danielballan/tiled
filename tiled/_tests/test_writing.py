@@ -464,3 +464,48 @@ def test_union_one_table(tree):
             structure=structure,
         )
         client.create_union([data_source], key="x")
+
+
+def test_union_two_tables(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df1 = pandas.DataFrame({"A": [], "B": []})
+        df2 = pandas.DataFrame({"C": [], "D": [], "E": []})
+        structure1 = TableStructure.from_pandas(df1)
+        structure2 = TableStructure.from_pandas(df2)
+        client.create_union(
+            [
+                DataSource(
+                    structure_family=StructureFamily.table,
+                    structure=structure1,
+                ),
+                DataSource(
+                    structure_family=StructureFamily.table,
+                    structure=structure2,
+                ),
+            ],
+            key="x",
+        )
+
+
+def test_union_two_tables_colliding_keys(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df1 = pandas.DataFrame({"A": [], "B": []})
+        df2 = pandas.DataFrame({"A": [], "C": [], "D": []})
+        structure1 = TableStructure.from_pandas(df1)
+        structure2 = TableStructure.from_pandas(df2)
+        with fail_with_status_code(422):
+            client.create_union(
+                [
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure1,
+                    ),
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure2,
+                    ),
+                ],
+                key="x",
+            )

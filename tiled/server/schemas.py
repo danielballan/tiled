@@ -11,7 +11,7 @@ import pydantic.errors
 import pydantic.generics
 
 from ..structures.core import StructureFamily
-from ..structures.data_source import Management
+from ..structures.data_source import Management, validate_data_sources
 from .pydantic_array import ArrayStructure
 from .pydantic_awkward import AwkwardStructure
 from .pydantic_sparse import SparseStructure
@@ -409,6 +409,10 @@ class PostMetadataRequest(pydantic.BaseModel):
             if value in v[i:]:
                 raise pydantic.errors.ListUniqueItemsError()
         return v
+
+    @pydantic.validator("data_sources", always=True)
+    def check_consistency(cls, v, values):
+        return validate_data_sources(values["structure_family"], v)
 
 
 class PostMetadataResponse(pydantic.BaseModel, Generic[ResourceLinksT]):
