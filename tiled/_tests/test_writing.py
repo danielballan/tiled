@@ -19,6 +19,7 @@ from ..catalog import in_memory
 from ..client import Context, from_context, record_history
 from ..queries import Key
 from ..server.app import build_app
+from ..structures.array import ArrayStructure
 from ..structures.core import Spec, StructureFamily
 from ..structures.data_source import DataSource
 from ..structures.sparse import COOStructure
@@ -505,6 +506,66 @@ def test_union_two_tables_colliding_keys(tree):
                     DataSource(
                         structure_family=StructureFamily.table,
                         structure=structure2,
+                    ),
+                ],
+                key="x",
+            )
+
+
+def test_union_two_tables_two_arrays(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df1 = pandas.DataFrame({"A": [], "B": []})
+        df2 = pandas.DataFrame({"C": [], "D": [], "E": []})
+        arr1 = numpy.array([], dtype=numpy.float64)
+        arr2 = numpy.array([], dtype=numpy.int8)
+        structure1 = TableStructure.from_pandas(df1)
+        structure2 = TableStructure.from_pandas(df2)
+        structure3 = ArrayStructure.from_array(arr1)
+        structure4 = ArrayStructure.from_array(arr2)
+        client.create_union(
+            [
+                DataSource(
+                    structure_family=StructureFamily.table,
+                    structure=structure1,
+                ),
+                DataSource(
+                    structure_family=StructureFamily.table,
+                    structure=structure2,
+                ),
+                DataSource(
+                    structure_family=StructureFamily.array,
+                    structure=structure3,
+                    key="F",
+                ),
+                DataSource(
+                    structure_family=StructureFamily.array,
+                    structure=structure4,
+                    key="G",
+                ),
+            ],
+            key="x",
+        )
+
+
+def test_union_table_column_array_key_collision(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df = pandas.DataFrame({"A": [], "B": []})
+        arr = numpy.array([], dtype=numpy.float64)
+        structure1 = TableStructure.from_pandas(df)
+        structure2 = ArrayStructure.from_array(arr)
+        with fail_with_status_code(422):
+            client.create_union(
+                [
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure1,
+                    ),
+                    DataSource(
+                        structure_family=StructureFamily.array,
+                        structure=structure2,
+                        key="B",
                     ),
                 ],
                 key="x",
