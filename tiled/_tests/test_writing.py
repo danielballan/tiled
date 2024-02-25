@@ -475,7 +475,7 @@ def test_union_two_tables(tree):
         df2 = pandas.DataFrame({"C": [], "D": [], "E": []})
         structure1 = TableStructure.from_pandas(df1)
         structure2 = TableStructure.from_pandas(df2)
-        client.create_union(
+        x = client.create_union(
             [
                 DataSource(
                     structure_family=StructureFamily.table,
@@ -490,6 +490,10 @@ def test_union_two_tables(tree):
             ],
             key="x",
         )
+        x.contents["table1"].write(df1)
+        x.contents["table2"].write(df2)
+        x.contents["table1"].read()
+        x.contents["table2"].read()
 
 
 def test_union_two_tables_colliding_names(tree):
@@ -547,13 +551,13 @@ def test_union_two_tables_two_arrays(tree):
         client = from_context(context)
         df1 = pandas.DataFrame({"A": [], "B": []})
         df2 = pandas.DataFrame({"C": [], "D": [], "E": []})
-        arr1 = numpy.array([], dtype=numpy.float64)
-        arr2 = numpy.array([], dtype=numpy.int8)
+        arr1 = numpy.ones((5, 5), dtype=numpy.float64)
+        arr2 = 2 * numpy.ones((5, 5), dtype=numpy.int8)
         structure1 = TableStructure.from_pandas(df1)
         structure2 = TableStructure.from_pandas(df2)
         structure3 = ArrayStructure.from_array(arr1)
         structure4 = ArrayStructure.from_array(arr2)
-        client.create_union(
+        x = client.create_union(
             [
                 DataSource(
                     structure_family=StructureFamily.table,
@@ -578,6 +582,14 @@ def test_union_two_tables_two_arrays(tree):
             ],
             key="x",
         )
+        x.contents["table1"].write(df1)
+        x.contents["table2"].write(df2)
+        x.contents["F"].write_block(arr1, (0, 0))
+        x.contents["G"].write_block(arr2, (0, 0))
+        x.contents["table1"].read()
+        x.contents["table2"].read()
+        x.contents["F"].read()
+        x.contents["G"].read()
 
 
 def test_union_table_column_array_key_collision(tree):

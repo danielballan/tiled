@@ -1024,6 +1024,11 @@ class CatalogUnionAdapter(CatalogNodeAdapter):
     async def read(self, *args, **kwargs):
         return await ensure_awaitable((await self.get_adapter()).read, *args, **kwargs)
 
+    async def read_block(self, *args, **kwargs):
+        return await ensure_awaitable(
+            (await self.get_adapter()).read_block, *args, **kwargs
+        )
+
     async def write(self, *args, **kwargs):
         return await ensure_awaitable((await self.get_adapter()).write, *args, **kwargs)
 

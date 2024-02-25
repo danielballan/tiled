@@ -357,13 +357,17 @@ async def array_block(
     expected_shape=Depends(expected_shape),
     format: Optional[str] = None,
     filename: Optional[str] = None,
+    data_source: Optional[str] = None,
     serialization_registry=Depends(get_serialization_registry),
     settings: BaseSettings = Depends(get_settings),
 ):
     """
     Fetch a chunk of array-like data.
     """
-    shape = entry.structure().shape
+    if data_source is None:
+        shape = entry.structure().shape
+    else:
+        shape = entry.data_source.structure.shape
     # Check that block dimensionality matches array dimensionality.
     ndim = len(shape)
     if len(block) != ndim:
