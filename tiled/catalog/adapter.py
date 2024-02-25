@@ -361,17 +361,22 @@ class CatalogNodeAdapter:
             # Give no inlined contents.
             return ContainerStructure(contents=None, count=None)
         if self.structure_family == StructureFamily.union:
-            return UnionStructure(
-                contents=[
+            contents = []
+            all_keys = []
+            for data_source in self.data_sources:
+                contents.append(
                     UnionStructureItem(
                         data_source_id=data_source.id,
                         structure=data_source.structure,
                         structure_family=data_source.structure_family,
                         name=data_source.name,
                     )
-                    for data_source in self.data_sources
-                ]
-            )
+                )
+                if data_source.structure_family == StructureFamily.table:
+                    all_keys.extend(data_source.structure.columns)
+                else:
+                    all_keys.append(data_source.name)
+            return UnionStructure(contents=contents, all_keys=all_keys)
         if self.data_sources:
             assert len(self.data_sources) == 1  # more not yet implemented
             return self.data_sources[0].structure
