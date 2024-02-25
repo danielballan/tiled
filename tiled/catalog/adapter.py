@@ -4,7 +4,6 @@ import itertools as it
 import operator
 import os
 import re
-import secrets
 import shutil
 import sys
 import uuid
@@ -638,14 +637,12 @@ class CatalogNodeAdapter:
                         data_source.structure_family
                     ]
                     data_source.parameters = {}
-                    data_uri = str(self.context.writable_storage) + "".join(
-                        f"/{quote_plus(segment)}" for segment in (self.segments + [key])
-                    )
+                    data_uri_path_parts = self.segments + [key]
                     if structure_family == StructureFamily.union:
-                        # Append a random suffix so that multiple data sources have
-                        # unique names.
-                        # TODO Can we do something more elegant?
-                        data_uri += f"_{secrets.token_hex(4)}"
+                        data_uri_path_parts.append(data_source.name)
+                    data_uri = str(self.context.writable_storage) + "".join(
+                        f"/{quote_plus(segment)}" for segment in data_uri_path_parts
+                    )
                     init_storage = DEFAULT_INIT_STORAGE[data_source.structure_family]
                     assets = await ensure_awaitable(
                         init_storage, data_uri, data_source.structure
