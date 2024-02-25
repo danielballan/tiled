@@ -303,7 +303,7 @@ class DataSource(Timestamped, Base):
     structure_family = Column(Enum(StructureFamily), nullable=False)
     # This is used by `union` structures to address arrays.
     # It may have additional uses in the future.
-    key = Column(Unicode(1023), nullable=True)
+    name = Column(Unicode(1023), nullable=True)
 
     # many-to-one relationship to Structure
     structure: Mapped["Structure"] = relationship(

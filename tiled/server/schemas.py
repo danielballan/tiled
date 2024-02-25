@@ -148,7 +148,7 @@ class DataSource(pydantic.BaseModel):
     parameters: dict = {}
     assets: List[Asset] = []
     management: Management = Management.writable
-    key: Optional[str] = None
+    name: Optional[str] = None
 
     @classmethod
     def from_orm(cls, orm):
@@ -160,7 +160,7 @@ class DataSource(pydantic.BaseModel):
             parameters=orm.parameters,
             assets=[Asset.from_assoc_orm(assoc) for assoc in orm.asset_associations],
             management=orm.management,
-            key=orm.key,
+            name=orm.name,
         )
 
 

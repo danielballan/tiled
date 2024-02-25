@@ -52,6 +52,7 @@ def SecureEntry(scopes):
     async def inner(
         path: str,
         request: Request,
+        data_source: Optional[str] = None,
         principal: str = Depends(get_current_principal),
         root_tree: pydantic.BaseSettings = Depends(get_root_tree),
         session_state: dict = Depends(get_session_state),
@@ -82,7 +83,9 @@ def SecureEntry(scopes):
                 # It can jump directly to the node of interest.
 
                 if hasattr(entry, "lookup_adapter"):
-                    entry = await entry.lookup_adapter(path_parts[i:])
+                    entry = await entry.lookup_adapter(
+                        path_parts[i:], data_source_name=data_source
+                    )
                     if entry is None:
                         raise NoEntry(path_parts)
                     break

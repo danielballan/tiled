@@ -1,4 +1,4 @@
-"""Add 'key' column to data_sources table.
+"""Add 'name' column to data_sources table.
 
 Revision ID: 7c8130c40b8f
 Revises: e756b9381c14
@@ -16,7 +16,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("data_sources", sa.Column("key", sa.Unicode(1023), nullable=True))
+    op.add_column("data_sources", sa.Column("name", sa.Unicode(1023), nullable=True))
 
 
 def downgrade():

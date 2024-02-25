@@ -687,11 +687,11 @@ async def table_full(
     """
     Fetch the data for the given table.
     """
-    if entry.structure_family != StructureFamily.table:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Cannot read {entry.structure_family} structure with /table/full route.",
-        )
+    # if entry.structure_family != StructureFamily.table:
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail=f"Cannot read {entry.structure_family} structure with /table/full route.",
+    #     )
     try:
         with record_timing(request.state.metrics, "read"):
             data = await ensure_awaitable(entry.read, column)
@@ -1138,7 +1138,7 @@ async def _create_node(
                     data_source_id=data_source.id,
                     structure=data_source.structure,
                     structure_family=data_source.structure_family,
-                    key=data_source.key,
+                    name=data_source.name,
                 )
                 for data_source in body.data_sources
             ]

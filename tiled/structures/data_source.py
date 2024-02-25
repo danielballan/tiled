@@ -31,7 +31,7 @@ class DataSource:
     parameters: dict = dataclasses.field(default_factory=dict)
     assets: List[Asset] = dataclasses.field(default_factory=list)
     management: Management = Management.writable
-    key: Optional[str] = None
+    name: Optional[str] = None
 
 
 def validate_data_sources(node_structure_family, data_sources):
@@ -51,23 +51,30 @@ def validate_container_data_sources(node_structure_family, data_sources):
 def validate_union_data_sources(node_structure_family, data_sources):
     "Check that column names and keys of others (e.g. arrays) do not collide."
     keys = set()
+    names = set()
     for data_source in data_sources:
+        if data_source.name is None:
+            raise ValueError(
+                "Data sources backing a union structure_family must "
+                "all have non-NULL names."
+            )
+        if data_source.name in names:
+            raise ValueError(
+                "Data sources must have unique names. "
+                f"This name is used one more than one: {data_source.name}"
+            )
+        names.add(data_source.name)
         if data_source.structure_family == StructureFamily.table:
             columns = data_source.structure.columns
             if keys.intersection(columns):
                 raise ValueError(
-                    f"Two data sources provide colliding keys: {keys.intersection(columns)}"
+                    f"Data sources provide colliding keys: {keys.intersection(columns)}"
                 )
             keys.update(columns)
         else:
-            key = data_source.key
-            if key is None:
-                raise ValueError(
-                    f"Data source of type {data_source.structure_family} "
-                    "must have a non-NULL key."
-                )
+            key = data_source.name
             if key in keys:
-                raise ValueError(f"Collision: {key}")
+                raise ValueError(f"Data sources provide colliding keys: {key}")
             keys.add(key)
     return data_sources
 

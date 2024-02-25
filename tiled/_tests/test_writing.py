@@ -463,6 +463,7 @@ def test_union_one_table(tree):
         data_source = DataSource(
             structure_family=StructureFamily.table,
             structure=structure,
+            name="table",
         )
         client.create_union([data_source], key="x")
 
@@ -479,14 +480,41 @@ def test_union_two_tables(tree):
                 DataSource(
                     structure_family=StructureFamily.table,
                     structure=structure1,
+                    name="table1",
                 ),
                 DataSource(
                     structure_family=StructureFamily.table,
                     structure=structure2,
+                    name="table2",
                 ),
             ],
             key="x",
         )
+
+
+def test_union_two_tables_colliding_names(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context)
+        df1 = pandas.DataFrame({"A": [], "B": []})
+        df2 = pandas.DataFrame({"C": [], "D": [], "E": []})
+        structure1 = TableStructure.from_pandas(df1)
+        structure2 = TableStructure.from_pandas(df2)
+        with fail_with_status_code(422):
+            client.create_union(
+                [
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure1,
+                        name="table1",
+                    ),
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure2,
+                        name="table1",  # collision
+                    ),
+                ],
+                key="x",
+            )
 
 
 def test_union_two_tables_colliding_keys(tree):
@@ -502,10 +530,12 @@ def test_union_two_tables_colliding_keys(tree):
                     DataSource(
                         structure_family=StructureFamily.table,
                         structure=structure1,
+                        name="table1",
                     ),
                     DataSource(
                         structure_family=StructureFamily.table,
                         structure=structure2,
+                        name="table2",
                     ),
                 ],
                 key="x",
@@ -528,20 +558,22 @@ def test_union_two_tables_two_arrays(tree):
                 DataSource(
                     structure_family=StructureFamily.table,
                     structure=structure1,
+                    name="table1",
                 ),
                 DataSource(
                     structure_family=StructureFamily.table,
                     structure=structure2,
+                    name="table2",
                 ),
                 DataSource(
                     structure_family=StructureFamily.array,
                     structure=structure3,
-                    key="F",
+                    name="F",
                 ),
                 DataSource(
                     structure_family=StructureFamily.array,
                     structure=structure4,
-                    key="G",
+                    name="G",
                 ),
             ],
             key="x",
@@ -561,11 +593,12 @@ def test_union_table_column_array_key_collision(tree):
                     DataSource(
                         structure_family=StructureFamily.table,
                         structure=structure1,
+                        name="table",
                     ),
                     DataSource(
                         structure_family=StructureFamily.array,
                         structure=structure2,
-                        key="B",
+                        name="B",
                     ),
                 ],
                 key="x",

@@ -264,6 +264,7 @@ class CatalogNodeAdapter:
         queries=None,
         sorting=None,
         access_policy=None,
+        data_source_name=None,
     ):
         self.context = context
         self.engine = self.context.engine
@@ -282,6 +283,7 @@ class CatalogNodeAdapter:
         self.ancestors = node.ancestors
         self.key = node.key
         self.access_policy = access_policy
+        self.data_source_name = data_source_name
         self.startup_tasks = [self.startup]
         self.shutdown_tasks = [self.shutdown]
 
@@ -357,7 +359,7 @@ class CatalogNodeAdapter:
                         data_source_id=data_source.id,
                         structure=data_source.structure,
                         structure_family=data_source.structure_family,
-                        key=data_source.key,
+                        name=data_source.name,
                     )
                     for data_source in self.data_sources
                 ]
@@ -379,7 +381,7 @@ class CatalogNodeAdapter:
     async def lookup_adapter(
         self,
         segments,
-        data_source_id=None,
+        data_source_name=None,
     ):  # TODO: Accept filter for predicate-pushdown.
         if not segments:
             return self
@@ -389,13 +391,17 @@ class CatalogNodeAdapter:
             # this node, either via user search queries or via access
             # control policy queries. Look up first the _direct_ child of this
             # node, if it exists within the filtered results.
-            first_level = await self.lookup_adapter(segments[:1])
+            first_level = await self.lookup_adapter(
+                segments[:1], data_source_name=data_source_name
+            )
             if first_level is None:
                 return None
             # Now proceed to traverse further down the tree, if needed.
             # Search queries and access controls apply only at the top level.
             assert not first_level.conditions
-            return await first_level.lookup_adapter(segments[1:])
+            return await first_level.lookup_adapter(
+                segments[1:], data_source_name=data_source_name
+            )
         statement = (
             select(orm.Node)
             .filter(orm.Node.ancestors == self.segments + ancestors)
@@ -418,9 +424,11 @@ class CatalogNodeAdapter:
             # HDF5 file begins.
 
             for i in range(len(segments)):
-                catalog_adapter = await self.lookup_adapter(segments[:i])
+                catalog_adapter = await self.lookup_adapter(
+                    segments[:i], data_source_name=data_source_name
+                )
                 if catalog_adapter.data_sources:
-                    adapter = await catalog_adapter.get_adapter(data_source_id)
+                    adapter = await catalog_adapter.get_adapter(data_source_name)
                     for segment in segments[i:]:
                         adapter = await anyio.to_thread.run_sync(adapter.get, segment)
                         if adapter is None:
@@ -428,25 +436,29 @@ class CatalogNodeAdapter:
                     return adapter
             return None
         return STRUCTURES[node.structure_family](
-            self.context, node, access_policy=self.access_policy
+            self.context,
+            node,
+            data_source_name=data_source_name,
+            access_policy=self.access_policy,
         )
 
-    async def get_adapter(self, data_source_id=None):
+    async def get_adapter(self):
         num_data_sources = len(self.data_sources)
-        if data_source_id is not None:
+        if self.data_source_name is not None:
             for data_source in self.data_sources:
-                if data_source_id == data_source.id:
+                if self.data_source_name == data_source.name:
                     break
             else:
                 raise ValueError(
-                    f"No such data_source_id {data_source_id} on this node"
+                    f"No DataSource named {self.data_source_name} on this node"
                 )
         elif num_data_sources > 1:
             raise ValueError(
-                "A data_source_id is required because this node "
+                "A data_source_name is required because this node "
                 f"has {num_data_sources} data sources"
             )
-        (data_source,) = self.data_sources
+        else:
+            (data_source,) = self.data_sources
         try:
             adapter_factory = self.context.adapters_by_mimetype[data_source.mimetype]
         except KeyError:
@@ -675,6 +687,7 @@ class CatalogNodeAdapter:
                     await db.execute(statement)
                 data_source_orm = orm.DataSource(
                     structure_family=data_source.structure_family,
+                    name=data_source.name,
                     mimetype=data_source.mimetype,
                     management=data_source.management,
                     parameters=data_source.parameters,
@@ -1005,10 +1018,21 @@ class CatalogTableAdapter(CatalogNodeAdapter):
 class CatalogUnionAdapter(CatalogNodeAdapter):
     # This does not support direct reading or writing.
 
-    def get(self, key):
-        pass
-        # breakpoint()
-        # Find the key in self.data_sources
+    async def read(self, *args, **kwargs):
+        return await ensure_awaitable((await self.get_adapter()).read, *args, **kwargs)
+
+    async def write(self, *args, **kwargs):
+        return await ensure_awaitable((await self.get_adapter()).write, *args, **kwargs)
+
+    async def read_partition(self, *args, **kwargs):
+        return await ensure_awaitable(
+            (await self.get_adapter()).read_partition, *args, **kwargs
+        )
+
+    async def write_partition(self, *args, **kwargs):
+        return await ensure_awaitable(
+            (await self.get_adapter()).write_partition, *args, **kwargs
+        )
 
 
 def delete_asset(data_uri, is_directory):
