@@ -283,9 +283,18 @@ class CatalogNodeAdapter:
         self.ancestors = node.ancestors
         self.key = node.key
         self.access_policy = access_policy
-        self.data_source_name = data_source_name
         self.startup_tasks = [self.startup]
         self.shutdown_tasks = [self.shutdown]
+        if data_source_name is not None:
+            for data_source in self.data_sources:
+                if data_source_name == data_source.name:
+                    self.data_source_structure_family = data_source.structure_family
+                    break
+            else:
+                raise ValueError(f"No DataSource named {data_source_name} on this node")
+            self.data_source = data_source
+        elif len(self.data_sources) == 1:
+            (self.data_source,) = self.data_sources
 
     def metadata(self):
         return self.node.metadata_
@@ -428,7 +437,7 @@ class CatalogNodeAdapter:
                     segments[:i], data_source_name=data_source_name
                 )
                 if catalog_adapter.data_sources:
-                    adapter = await catalog_adapter.get_adapter(data_source_name)
+                    adapter = await catalog_adapter.get_adapter()
                     for segment in segments[i:]:
                         adapter = await anyio.to_thread.run_sync(adapter.get, segment)
                         if adapter is None:
@@ -443,30 +452,20 @@ class CatalogNodeAdapter:
         )
 
     async def get_adapter(self):
-        num_data_sources = len(self.data_sources)
-        if self.data_source_name is not None:
-            for data_source in self.data_sources:
-                if self.data_source_name == data_source.name:
-                    break
-            else:
-                raise ValueError(
-                    f"No DataSource named {self.data_source_name} on this node"
-                )
-        elif num_data_sources > 1:
-            raise ValueError(
-                "A data_source_name is required because this node "
-                f"has {num_data_sources} data sources"
+        if (self.structure_family == StructureFamily.union) and not self.data_source:
+            raise RuntimeError(
+                "A data_source_name must be specified at construction time."
             )
-        else:
-            (data_source,) = self.data_sources
         try:
-            adapter_factory = self.context.adapters_by_mimetype[data_source.mimetype]
+            adapter_factory = self.context.adapters_by_mimetype[
+                self.data_source.mimetype
+            ]
         except KeyError:
             raise RuntimeError(
-                f"Server configuration has no adapter for mimetype {data_source.mimetype!r}"
+                f"Server configuration has no adapter for mimetype {self.data_source.mimetype!r}"
             )
         parameters = collections.defaultdict(list)
-        for asset in data_source.assets:
+        for asset in self.data_source.assets:
             if asset.parameter is None:
                 continue
             scheme = urlparse(asset.data_uri).scheme
@@ -495,10 +494,10 @@ class CatalogNodeAdapter:
             else:
                 parameters[asset.parameter].append(asset.data_uri)
         adapter_kwargs = dict(parameters)
-        adapter_kwargs.update(data_source.parameters)
+        adapter_kwargs.update(self.data_source.parameters)
         adapter_kwargs["specs"] = self.node.specs
         adapter_kwargs["metadata"] = self.node.metadata_
-        adapter_kwargs["structure"] = data_source.structure
+        adapter_kwargs["structure"] = self.data_source.structure
         adapter_kwargs["access_policy"] = self.access_policy
         adapter = await anyio.to_thread.run_sync(
             partial(adapter_factory, **adapter_kwargs)
@@ -1016,7 +1015,9 @@ class CatalogTableAdapter(CatalogNodeAdapter):
 
 
 class CatalogUnionAdapter(CatalogNodeAdapter):
-    # This does not support direct reading or writing.
+    # def get(self, key):
+    #     for data_source in data_sources:
+    #         if data_source.name ==
 
     async def read(self, *args, **kwargs):
         return await ensure_awaitable((await self.get_adapter()).read, *args, **kwargs)

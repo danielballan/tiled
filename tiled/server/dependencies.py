@@ -11,6 +11,7 @@ from ..media_type_registration import (
     serialization_registry as default_serialization_registry,
 )
 from ..query_registration import query_registry as default_query_registry
+from ..structures.core import StructureFamily
 from ..validation_registration import validation_registry as default_validation_registry
 from .authentication import get_current_principal, get_session_state
 from .core import NoEntry
@@ -48,7 +49,7 @@ def get_root_tree():
     )
 
 
-def SecureEntry(scopes):
+def SecureEntry(scopes, structure_families=None):
     async def inner(
         path: str,
         request: Request,
@@ -119,7 +120,36 @@ def SecureEntry(scopes):
                             )
         except NoEntry:
             raise HTTPException(status_code=404, detail=f"No such entry: {path_parts}")
-        return entry
+        # Fast path for the common successful case
+        if (structure_families is None) or (
+            entry.structure_family in structure_families
+        ):
+            return entry
+        # Handle union structure_family
+        if entry.structure_family == StructureFamily.union:
+            if not data_source:
+                raise HTTPException(
+                    status_code=400, detail="A data_source query parameter is required."
+                )
+            if entry.data_source.structure_family in structure_families:
+                return entry
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"The data source named {data_source} backing the node "
+                    f"at {path} has structure family {entry.data_source.structure_family} "
+                    "and this endpoint is compatible with structure families "
+                    f"{structure_families}"
+                ),
+            )
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"The node at {path} has structure family {entry.structure_family} "
+                "and this endpoint is compatible with structure families "
+                f"{structure_families}"
+            ),
+        )
 
     return Security(inner, scopes=scopes)
 
