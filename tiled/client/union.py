@@ -1,7 +1,7 @@
 import copy
 
 from .base import STRUCTURE_TYPES, BaseClient
-from .utils import client_for_item
+from .utils import MSGPACK_MIME_TYPE, ClientError, client_for_item, handle_error
 
 
 class UnionClient(BaseClient):
@@ -19,7 +19,31 @@ class UnionClient(BaseClient):
     def __getitem__(self, key):
         if key not in self.structure().all_keys:
             raise KeyError(key)
-        raise NotImplementedError
+        try:
+            self_link = self.item["links"]["self"]
+            if self_link.endswith("/"):
+                self_link = self_link[:-1]
+            params = {}
+            if self._include_data_sources:
+                params["include_data_sources"] = True
+            content = handle_error(
+                self.context.http_client.get(
+                    f"{self_link}/{key}",
+                    headers={"Accept": MSGPACK_MIME_TYPE},
+                    params=params,
+                )
+            ).json()
+        except ClientError as err:
+            if err.response.status_code == 404:
+                raise KeyError(key)
+            raise
+        item = content["data"]
+        return client_for_item(
+            self.context,
+            self.structure_clients,
+            item,
+            include_data_sources=self._include_data_sources,
+        )
 
 
 class UnionContents:

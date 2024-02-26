@@ -425,6 +425,10 @@ class CatalogNodeAdapter:
 
             for i in range(len(segments)):
                 catalog_adapter = await self.lookup_adapter(segments[:i])
+                if (catalog_adapter.structure_family == StructureFamily.union) and len(
+                    segments[i:]
+                ) == 1:
+                    return await ensure_awaitable(catalog_adapter.get, segments[-1])
                 if catalog_adapter.data_sources:
                     adapter = await catalog_adapter.get_adapter()
                     for segment in segments[i:]:
@@ -978,6 +982,9 @@ class CatalogSparseAdapter(CatalogArrayAdapter):
 
 
 class CatalogTableAdapter(CatalogNodeAdapter):
+    async def get(self, *args, **kwargs):
+        return (await self.get_adapter()).get(*args, **kwargs)
+
     async def read(self, *args, **kwargs):
         return await ensure_awaitable((await self.get_adapter()).read, *args, **kwargs)
 
@@ -996,8 +1003,17 @@ class CatalogTableAdapter(CatalogNodeAdapter):
 
 
 class CatalogUnionAdapter(CatalogNodeAdapter):
-    def get(self, key):
-        ...
+    async def get(self, key):
+        if key not in self.structure().all_keys:
+            return None
+        for data_source in self.data_sources:
+            if data_source.structure_family == StructureFamily.table:
+                if key in data_source.structure.columns:
+                    return await ensure_awaitable(
+                        self.for_data_source(data_source.name).get, key
+                    )
+            if key == data_source.name:
+                return self.for_data_source(data_source.name)
 
     def for_data_source(self, data_source_name):
         for data_source in self.data_sources:

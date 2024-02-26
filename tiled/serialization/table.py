@@ -47,7 +47,7 @@ def serialize_csv(df, metadata, preserve_index=False):
 def deserialize_csv(buffer):
     import pandas
 
-    return pandas.read_csv(io.BytesIO(buffer))
+    return pandas.read_csv(io.BytesIO(buffer), headers=False)
 
 
 serialization_registry.register(StructureFamily.table, "text/csv", serialize_csv)
