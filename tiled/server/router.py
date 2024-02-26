@@ -364,10 +364,7 @@ async def array_block(
     """
     Fetch a chunk of array-like data.
     """
-    if data_source is None:
-        shape = entry.structure().shape
-    else:
-        shape = entry.data_source.structure.shape
+    shape = entry.structure().shape
     # Check that block dimensionality matches array dimensionality.
     ndim = len(shape)
     if len(block) != ndim:
@@ -1292,7 +1289,9 @@ async def put_array_block(
 @router.put("/node/full/{path:path}", deprecated=True)
 async def put_node_full(
     request: Request,
-    entry=SecureEntry(scopes=["write:data"]),
+    entry=SecureEntry(
+        scopes=["write:data"], structure_families={StructureFamily.table}
+    ),
     deserialization_registry=Depends(get_deserialization_registry),
 ):
     if not hasattr(entry, "write"):

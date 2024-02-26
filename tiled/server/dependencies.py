@@ -84,9 +84,7 @@ def SecureEntry(scopes, structure_families=None):
                 # It can jump directly to the node of interest.
 
                 if hasattr(entry, "lookup_adapter"):
-                    entry = await entry.lookup_adapter(
-                        path_parts[i:], data_source_name=data_source
-                    )
+                    entry = await entry.lookup_adapter(path_parts[i:])
                     if entry is None:
                         raise NoEntry(path_parts)
                     break
@@ -129,16 +127,21 @@ def SecureEntry(scopes, structure_families=None):
         if entry.structure_family == StructureFamily.union:
             if not data_source:
                 raise HTTPException(
-                    status_code=400, detail="A data_source query parameter is required."
+                    status_code=400,
+                    detail=(
+                        "A data_source query parameter is required on this endpoint "
+                        "when addressing a 'union' structure."
+                    ),
                 )
-            if entry.data_source.structure_family in structure_families:
-                return entry
+            entry_for_data_source = entry.for_data_source(data_source)
+            if entry_for_data_source.structure_family in structure_families:
+                return entry_for_data_source
             raise HTTPException(
                 status_code=404,
                 detail=(
                     f"The data source named {data_source} backing the node "
-                    f"at {path} has structure family {entry.data_source.structure_family} "
-                    "and this endpoint is compatible with structure families "
+                    f"at {path} has structure family {entry_for_data_source.structure_family} "
+                    "and this endpoint is compatible only with structure families "
                     f"{structure_families}"
                 ),
             )
@@ -146,7 +149,7 @@ def SecureEntry(scopes, structure_families=None):
             status_code=404,
             detail=(
                 f"The node at {path} has structure family {entry.structure_family} "
-                "and this endpoint is compatible with structure families "
+                "and this endpoint is compatible only with structure families "
                 f"{structure_families}"
             ),
         )

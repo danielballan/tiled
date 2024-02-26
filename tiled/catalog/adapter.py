@@ -259,11 +259,12 @@ class CatalogNodeAdapter:
         context,
         node,
         *,
+        structure_family=None,
+        data_sources=None,
         conditions=None,
         queries=None,
         sorting=None,
         access_policy=None,
-        data_source_name=None,
     ):
         self.context = context
         self.engine = self.context.engine
@@ -277,23 +278,18 @@ class CatalogNodeAdapter:
         self.order_by_clauses = order_by_clauses(self.sorting)
         self.conditions = conditions or []
         self.queries = queries or []
-        self.structure_family = node.structure_family
         self.specs = [Spec.parse_obj(spec) for spec in node.specs]
         self.ancestors = node.ancestors
         self.key = node.key
         self.access_policy = access_policy
         self.startup_tasks = [self.startup]
         self.shutdown_tasks = [self.shutdown]
-        if data_source_name is not None:
-            for data_source in self.data_sources:
-                if data_source_name == data_source.name:
-                    self.data_source_structure_family = data_source.structure_family
-                    break
-            else:
-                raise ValueError(f"No DataSource named {data_source_name} on this node")
-            self.data_source = data_source
-        elif len(self.data_sources) == 1:
-            (self.data_source,) = self.data_sources
+        self.structure_family = structure_family or node.structure_family
+        if data_sources is None:
+            data_sources = [
+                DataSource.from_orm(ds) for ds in self.node.data_sources or []
+            ]
+        self.data_sources = data_sources
 
     def metadata(self):
         return self.node.metadata_
@@ -331,10 +327,6 @@ class CatalogNodeAdapter:
         statement = select(orm.Node.key).filter(orm.Node.ancestors == self.segments)
         async with self.context.session() as db:
             return (await db.execute(statement)).scalar().all()
-
-    @property
-    def data_sources(self):
-        return [DataSource.from_orm(ds) for ds in self.node.data_sources or []]
 
     async def asset_by_id(self, asset_id):
         statement = (
@@ -394,7 +386,6 @@ class CatalogNodeAdapter:
     async def lookup_adapter(
         self,
         segments,
-        data_source_name=None,
     ):  # TODO: Accept filter for predicate-pushdown.
         if not segments:
             return self
@@ -404,17 +395,13 @@ class CatalogNodeAdapter:
             # this node, either via user search queries or via access
             # control policy queries. Look up first the _direct_ child of this
             # node, if it exists within the filtered results.
-            first_level = await self.lookup_adapter(
-                segments[:1], data_source_name=data_source_name
-            )
+            first_level = await self.lookup_adapter(segments[:1])
             if first_level is None:
                 return None
             # Now proceed to traverse further down the tree, if needed.
             # Search queries and access controls apply only at the top level.
             assert not first_level.conditions
-            return await first_level.lookup_adapter(
-                segments[1:], data_source_name=data_source_name
-            )
+            return await first_level.lookup_adapter(segments[1:])
         statement = (
             select(orm.Node)
             .filter(orm.Node.ancestors == self.segments + ancestors)
@@ -437,9 +424,7 @@ class CatalogNodeAdapter:
             # HDF5 file begins.
 
             for i in range(len(segments)):
-                catalog_adapter = await self.lookup_adapter(
-                    segments[:i], data_source_name=data_source_name
-                )
+                catalog_adapter = await self.lookup_adapter(segments[:i])
                 if catalog_adapter.data_sources:
                     adapter = await catalog_adapter.get_adapter()
                     for segment in segments[i:]:
@@ -451,25 +436,19 @@ class CatalogNodeAdapter:
         return STRUCTURES[node.structure_family](
             self.context,
             node,
-            data_source_name=data_source_name,
             access_policy=self.access_policy,
         )
 
     async def get_adapter(self):
-        if (self.structure_family == StructureFamily.union) and not self.data_source:
-            raise RuntimeError(
-                "A data_source_name must be specified at construction time."
-            )
+        (data_source,) = self.data_sources
         try:
-            adapter_factory = self.context.adapters_by_mimetype[
-                self.data_source.mimetype
-            ]
+            adapter_factory = self.context.adapters_by_mimetype[data_source.mimetype]
         except KeyError:
             raise RuntimeError(
-                f"Server configuration has no adapter for mimetype {self.data_source.mimetype!r}"
+                f"Server configuration has no adapter for mimetype {data_source.mimetype!r}"
             )
         parameters = collections.defaultdict(list)
-        for asset in self.data_source.assets:
+        for asset in data_source.assets:
             if asset.parameter is None:
                 continue
             scheme = urlparse(asset.data_uri).scheme
@@ -498,10 +477,10 @@ class CatalogNodeAdapter:
             else:
                 parameters[asset.parameter].append(asset.data_uri)
         adapter_kwargs = dict(parameters)
-        adapter_kwargs.update(self.data_source.parameters)
+        adapter_kwargs.update(data_source.parameters)
         adapter_kwargs["specs"] = self.node.specs
         adapter_kwargs["metadata"] = self.node.metadata_
-        adapter_kwargs["structure"] = self.data_source.structure
+        adapter_kwargs["structure"] = data_source.structure
         adapter_kwargs["access_policy"] = self.access_policy
         adapter = await anyio.to_thread.run_sync(
             partial(adapter_factory, **adapter_kwargs)
@@ -1017,29 +996,21 @@ class CatalogTableAdapter(CatalogNodeAdapter):
 
 
 class CatalogUnionAdapter(CatalogNodeAdapter):
-    # def get(self, key):
-    #     for data_source in data_sources:
-    #         if data_source.name ==
+    def get(self, key):
+        ...
 
-    async def read(self, *args, **kwargs):
-        return await ensure_awaitable((await self.get_adapter()).read, *args, **kwargs)
-
-    async def read_block(self, *args, **kwargs):
-        return await ensure_awaitable(
-            (await self.get_adapter()).read_block, *args, **kwargs
-        )
-
-    async def write(self, *args, **kwargs):
-        return await ensure_awaitable((await self.get_adapter()).write, *args, **kwargs)
-
-    async def read_partition(self, *args, **kwargs):
-        return await ensure_awaitable(
-            (await self.get_adapter()).read_partition, *args, **kwargs
-        )
-
-    async def write_partition(self, *args, **kwargs):
-        return await ensure_awaitable(
-            (await self.get_adapter()).write_partition, *args, **kwargs
+    def for_data_source(self, data_source_name):
+        for data_source in self.data_sources:
+            if data_source_name == data_source.name:
+                break
+        else:
+            raise ValueError(f"No DataSource named {data_source_name} on this node")
+        return STRUCTURES[data_source.structure_family](
+            self.context,
+            self.node,
+            access_policy=self.access_policy,
+            structure_family=data_source.structure_family,
+            data_sources=[data_source],
         )
 
 
