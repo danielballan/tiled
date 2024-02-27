@@ -13,7 +13,7 @@ class UnionClient(BaseClient):
         )
 
     @property
-    def contents(self):
+    def parts(self):
         return UnionContents(self)
 
     def __getitem__(self, key):
@@ -53,12 +53,12 @@ class UnionContents:
     def __repr__(self):
         return (
             f"<{type(self).__name__} {{"
-            + ", ".join(f"'{item.name}'" for item in self.node.structure().contents)
+            + ", ".join(f"'{item.name}'" for item in self.node.structure().parts)
             + "}>"
         )
 
     def __getitem__(self, name):
-        for index, union_item in enumerate(self.node.structure().contents):
+        for index, union_item in enumerate(self.node.structure().parts):
             if union_item.name == name:
                 structure_family = union_item.structure_family
                 structure_dict = union_item.structure
@@ -68,7 +68,7 @@ class UnionContents:
         item = copy.deepcopy(self.node.item)
         item["attributes"]["structure_family"] = structure_family
         item["attributes"]["structure"] = structure_dict
-        item["links"] = item["links"]["contents"][index]
+        item["links"] = item["links"]["parts"][index]
         structure_type = STRUCTURE_TYPES[structure_family]
         structure = structure_type.from_json(structure_dict)
         return client_for_item(

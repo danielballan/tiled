@@ -490,10 +490,10 @@ def test_union_two_tables(tree):
             ],
             key="x",
         )
-        x.contents["table1"].write(df1)
-        x.contents["table2"].write(df2)
-        x.contents["table1"].read()
-        x.contents["table2"].read()
+        x.parts["table1"].write(df1)
+        x.parts["table2"].write(df2)
+        x.parts["table1"].read()
+        x.parts["table2"].read()
 
 
 def test_union_two_tables_colliding_names(tree):
@@ -583,16 +583,16 @@ def test_union_two_tables_two_arrays(tree):
             key="x",
         )
         # Write by data source.
-        x.contents["table1"].write(df1)
-        x.contents["table2"].write(df2)
-        x.contents["F"].write_block(arr1, (0, 0))
-        x.contents["G"].write_block(arr2, (0, 0))
+        x.parts["table1"].write(df1)
+        x.parts["table2"].write(df2)
+        x.parts["F"].write_block(arr1, (0, 0))
+        x.parts["G"].write_block(arr2, (0, 0))
 
         # Read by data source.
-        x.contents["table1"].read()
-        x.contents["table2"].read()
-        x.contents["F"].read()
-        x.contents["G"].read()
+        x.parts["table1"].read()
+        x.parts["table2"].read()
+        x.parts["F"].read()
+        x.parts["G"].read()
 
         # Read by column.
         for column in ["A", "B", "C", "D", "E", "F", "G"]:

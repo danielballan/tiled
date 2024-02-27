@@ -43,7 +43,7 @@ from ..mimetypes import (
 )
 from ..query_registration import QueryTranslationRegistry
 from ..server.pydantic_container import ContainerStructure
-from ..server.pydantic_union import UnionStructure, UnionStructureItem
+from ..server.pydantic_union import UnionStructure, UnionStructurePart
 from ..server.schemas import Asset, DataSource, Management, Revision, Spec
 from ..structures.core import StructureFamily
 from ..utils import (
@@ -353,12 +353,11 @@ class CatalogNodeAdapter:
             # Give no inlined contents.
             return ContainerStructure(contents=None, count=None)
         if self.structure_family == StructureFamily.union:
-            contents = []
+            parts = []
             all_keys = []
             for data_source in self.data_sources:
-                contents.append(
-                    UnionStructureItem(
-                        data_source_id=data_source.id,
+                parts.append(
+                    UnionStructurePart(
                         structure=data_source.structure,
                         structure_family=data_source.structure_family,
                         name=data_source.name,
@@ -368,7 +367,7 @@ class CatalogNodeAdapter:
                     all_keys.extend(data_source.structure.columns)
                 else:
                     all_keys.append(data_source.name)
-            return UnionStructure(contents=contents, all_keys=all_keys)
+            return UnionStructure(parts=parts, all_keys=all_keys)
         if self.data_sources:
             assert len(self.data_sources) == 1  # more not yet implemented
             return self.data_sources[0].structure
@@ -1010,17 +1009,17 @@ class CatalogUnionAdapter(CatalogNodeAdapter):
             if data_source.structure_family == StructureFamily.table:
                 if key in data_source.structure.columns:
                     return await ensure_awaitable(
-                        self.for_data_source(data_source.name).get, key
+                        self.for_part(data_source.name).get, key
                     )
             if key == data_source.name:
-                return self.for_data_source(data_source.name)
+                return self.for_part(data_source.name)
 
-    def for_data_source(self, data_source_name):
+    def for_part(self, name):
         for data_source in self.data_sources:
-            if data_source_name == data_source.name:
+            if name == data_source.name:
                 break
         else:
-            raise ValueError(f"No DataSource named {data_source_name} on this node")
+            raise ValueError(f"No DataSource named {name} on this node")
         return STRUCTURES[data_source.structure_family](
             self.context,
             self.node,

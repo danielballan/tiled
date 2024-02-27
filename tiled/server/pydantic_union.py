@@ -5,8 +5,7 @@ import pydantic
 from ..structures.core import StructureFamily
 
 
-class UnionStructureItem(pydantic.BaseModel):
-    data_source_id: Optional[int]
+class UnionStructurePart(pydantic.BaseModel):
     structure_family: StructureFamily
     structure: Any  # Union of Structures, but we do not want to import them...
     name: str
@@ -17,14 +16,12 @@ class UnionStructureItem(pydantic.BaseModel):
 
 
 class UnionStructure(pydantic.BaseModel):
-    contents: List[UnionStructureItem]
+    parts: List[UnionStructurePart]
     all_keys: Optional[List[str]]
 
     @classmethod
     def from_json(cls, structure):
         return cls(
-            contents=[
-                UnionStructureItem.from_json(item) for item in structure["contents"]
-            ],
+            parts=[UnionStructurePart.from_json(item) for item in structure["parts"]],
             all_keys=structure["all_keys"],
         )

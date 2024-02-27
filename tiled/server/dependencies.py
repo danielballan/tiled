@@ -53,7 +53,7 @@ def SecureEntry(scopes, structure_families=None):
     async def inner(
         path: str,
         request: Request,
-        data_source: Optional[str] = None,
+        part: Optional[str] = None,
         principal: str = Depends(get_current_principal),
         root_tree: pydantic.BaseSettings = Depends(get_root_tree),
         session_state: dict = Depends(get_session_state),
@@ -125,22 +125,22 @@ def SecureEntry(scopes, structure_families=None):
             return entry
         # Handle union structure_family
         if entry.structure_family == StructureFamily.union:
-            if not data_source:
+            if not part:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        "A data_source query parameter is required on this endpoint "
+                        "A part query parameter is required on this endpoint "
                         "when addressing a 'union' structure."
                     ),
                 )
-            entry_for_data_source = entry.for_data_source(data_source)
-            if entry_for_data_source.structure_family in structure_families:
-                return entry_for_data_source
+            entry_for_part = entry.for_part(part)
+            if entry_for_part.structure_family in structure_families:
+                return entry_for_part
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"The data source named {data_source} backing the node "
-                    f"at {path} has structure family {entry_for_data_source.structure_family} "
+                    f"The data source named {part} backing the node "
+                    f"at {path} has structure family {entry_for_part.structure_family} "
                     "and this endpoint is compatible only with structure families "
                     f"{structure_families}"
                 ),

@@ -14,7 +14,7 @@ from pydantic import BaseSettings
 from starlette.responses import FileResponse
 
 from .. import __version__
-from ..server.pydantic_union import UnionStructure, UnionStructureItem
+from ..server.pydantic_union import UnionStructure, UnionStructurePart
 from ..structures.core import StructureFamily
 from ..utils import ensure_awaitable, path_from_uri
 from ..validation_registration import ValidationError
@@ -1127,8 +1127,8 @@ async def _create_node(
     metadata_modified = False
     if structure_family == StructureFamily.union:
         structure = UnionStructure(
-            contents=[
-                UnionStructureItem(
+            parts=[
+                UnionStructurePart(
                     data_source_id=data_source.id,
                     structure=data_source.structure,
                     structure_family=data_source.structure_family,

@@ -5,8 +5,7 @@ from .core import StructureFamily
 
 
 @dataclasses.dataclass
-class UnionStructureItem:
-    data_source_id: int
+class UnionStructurePart:
     structure_family: StructureFamily
     structure: Any  # Union of Structures, but we do not want to import them...
     name: Optional[str]
@@ -18,14 +17,12 @@ class UnionStructureItem:
 
 @dataclasses.dataclass
 class UnionStructure:
-    contents: List[UnionStructureItem]
+    parts: List[UnionStructurePart]
     all_keys: List[str]
 
     @classmethod
     def from_json(cls, structure):
         return cls(
-            contents=[
-                UnionStructureItem.from_json(item) for item in structure["contents"]
-            ],
+            parts=[UnionStructurePart.from_json(item) for item in structure["parts"]],
             all_keys=structure["all_keys"],
         )
