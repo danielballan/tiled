@@ -74,18 +74,21 @@ DEFAULT_CREATION_MIMETYPE = {
     StructureFamily.table: PARQUET_MIMETYPE,
     StructureFamily.sparse: SPARSE_BLOCKS_PARQUET_MIMETYPE,
 }
-DEFAULT_INIT_STORAGE = OneShotCachedMap(
+INIT_STORAGE = OneShotCachedMap(
     {
-        StructureFamily.array: lambda: importlib.import_module(
+        ZARR_MIMETYPE: lambda: importlib.import_module(
             "...adapters.zarr", __name__
         ).ZarrArrayAdapter.init_storage,
-        StructureFamily.awkward: lambda: importlib.import_module(
+        AWKWARD_BUFFERS_MIMETYPE: lambda: importlib.import_module(
             "...adapters.awkward_buffers", __name__
         ).AwkwardBuffersAdapter.init_storage,
-        StructureFamily.table: lambda: importlib.import_module(
+        PARQUET_MIMETYPE: lambda: importlib.import_module(
             "...adapters.parquet", __name__
         ).ParquetDatasetAdapter.init_storage,
-        StructureFamily.sparse: lambda: importlib.import_module(
+        "text/csv": lambda: importlib.import_module(
+            "...adapters.csv", __name__
+        ).CSVAdapter.init_storage,
+        SPARSE_BLOCKS_PARQUET_MIMETYPE: lambda: importlib.import_module(
             "...adapters.sparse_blocks_parquet", __name__
         ).SparseBlocksParquetAdapter.init_storage,
     }
@@ -620,9 +623,10 @@ class CatalogNodeAdapter:
                 if data_source.management != Management.external:
                     if structure_family == StructureFamily.container:
                         raise NotImplementedError(structure_family)
-                    data_source.mimetype = DEFAULT_CREATION_MIMETYPE[
-                        data_source.structure_family
-                    ]
+                    if data_source.mimetype is None:
+                        data_source.mimetype = DEFAULT_CREATION_MIMETYPE[
+                            data_source.structure_family
+                        ]
                     data_source.parameters = {}
                     data_uri_path_parts = self.segments + [key]
                     if structure_family == StructureFamily.union:
@@ -630,7 +634,15 @@ class CatalogNodeAdapter:
                     data_uri = str(self.context.writable_storage) + "".join(
                         f"/{quote_plus(segment)}" for segment in data_uri_path_parts
                     )
-                    init_storage = DEFAULT_INIT_STORAGE[data_source.structure_family]
+                    if data_source.mimetype not in INIT_STORAGE:
+                        raise HTTPException(
+                            status_code=415,
+                            detail=(
+                                f"The given data source mimetype, {data_source.mimetype}, "
+                                "is not one that the Tiled server knows how to write."
+                            ),
+                        )
+                    init_storage = INIT_STORAGE[data_source.mimetype]
                     assets = await ensure_awaitable(
                         init_storage, data_uri, data_source.structure
                     )

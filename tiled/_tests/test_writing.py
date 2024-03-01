@@ -17,6 +17,7 @@ import sparse
 
 from ..catalog import in_memory
 from ..client import Context, from_context, record_history
+from ..mimetypes import PARQUET_MIMETYPE
 from ..queries import Key
 from ..server.app import build_app
 from ..structures.array import ArrayStructure
@@ -621,4 +622,40 @@ def test_union_table_column_array_key_collision(tree):
                     ),
                 ],
                 key="x",
+            )
+
+
+def test_write_with_specified_mimetype(tree):
+    with Context.from_app(build_app(tree)) as context:
+        client = from_context(context, include_data_sources=True)
+        df = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+        structure = TableStructure.from_pandas(df)
+
+        for mimetype in [PARQUET_MIMETYPE, "text/csv"]:
+            x = client.new(
+                "table",
+                [
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure,
+                        mimetype=mimetype,
+                    ),
+                ],
+            )
+            x.write_partition(df, 0)
+            x.read()
+            x.refresh()
+            x.data_sources()[0]["mimetype"] == mimetype
+
+        # Specifying unsupported mimetype raises expected error.
+        with fail_with_status_code(415):
+            client.new(
+                "table",
+                [
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=structure,
+                        mimetype="application/x-does-not-exist",
+                    ),
+                ],
             )
