@@ -1328,14 +1328,12 @@ async def put_table_partition(
 @router.put("/awkward/full/{path:path}")
 async def put_awkward_full(
     request: Request,
-    entry=SecureEntry(scopes=["write:data"]),
+    entry=SecureEntry(
+        scopes=["write:data"], structure_families={StructureFamily.awkward}
+    ),
     deserialization_registry=Depends(get_deserialization_registry),
 ):
     body = await request.body()
-    if entry.structure_family != StructureFamily.awkward:
-        raise HTTPException(
-            status_code=404, detail="This route is not applicable to this node."
-        )
     if not hasattr(entry, "write"):
         raise HTTPException(status_code=405, detail="This node cannot be written to.")
     media_type = request.headers["content-type"]
