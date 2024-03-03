@@ -287,7 +287,7 @@ class CatalogNodeAdapter:
         self.structure_family = structure_family or node.structure_family
         if data_sources is None:
             data_sources = [
-                DataSource.from_orm(ds) for ds in self.node.data_sources or []
+                DataSource.from_orm(ds) for ds in (self.node.data_sources or [])
             ]
         self.data_sources = data_sources
 
