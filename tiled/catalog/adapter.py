@@ -427,6 +427,9 @@ class CatalogNodeAdapter:
                 if (catalog_adapter.structure_family == StructureFamily.union) and len(
                     segments[i:]
                 ) == 1:
+                    # All the segments but the final segment, segments[-1], resolves
+                    # resolve to a union structure. Dispatch to the union Adapter
+                    # to get the inner Adapter for whatever type of structure it is.
                     return await ensure_awaitable(catalog_adapter.get, segments[-1])
                 if catalog_adapter.data_sources:
                     adapter = await catalog_adapter.get_adapter()
