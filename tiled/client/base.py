@@ -1,15 +1,12 @@
 import importlib
 import time
 import warnings
-
 from copy import deepcopy
-
-import jsonpatch
-import orjson
-
 from dataclasses import asdict
 from pathlib import Path
 
+import jsonpatch
+import orjson
 from httpx import URL
 
 from ..structures.core import Spec, StructureFamily
@@ -402,8 +399,7 @@ client or pass the optional parameter `include_data_sources=True` to
             metadata = self.metadata_copy()
 
         patch = jsonpatch.JsonPatch.from_diff(
-            dict(self.metadata), metadata,
-            dumps=orjson.dumps
+            dict(self.metadata), metadata, dumps=orjson.dumps
         ).patch
 
         self.patch_metadata(patch=patch, specs=specs)
@@ -442,7 +438,8 @@ client or pass the optional parameter `include_data_sources=True` to
 
         content = handle_error(
             self.context.http_client.patch(
-                self.item["links"]["self"], content=safe_json_dump(data),
+                self.item["links"]["self"],
+                content=safe_json_dump(data),
                 headers={"Content-Type": "application/json-patch+json"},
             )
         ).json()
