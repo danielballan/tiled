@@ -481,7 +481,7 @@ JSONPatchSpec = TypedDict(
         "from": str,
         "value": Any,
     },
-    total=False
+    total=False,
 )
 
 
