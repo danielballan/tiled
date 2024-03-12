@@ -189,7 +189,7 @@ def test_redundant_query_parameters(context):
     url_path = client["basic"].item["links"]["partition"]
     original_params = {
         "partition": 0,
-        "field": "x",
+        "field": "x",  # Parameter is deprecated, but central to this test
         "column": "y",
     }
 
