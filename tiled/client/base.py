@@ -377,7 +377,7 @@ client or pass the optional parameter `include_data_sources=True` to
         )
         return sorted(formats)
 
-    def update_metadata(self, metadata=None, specs=None):
+    def update_metadata(self, metadata=None, specs=None, exec=True):
         """
         EXPERIMENTAL: Update metadata via a `dict.update`- like interface.
 
@@ -392,6 +392,9 @@ client or pass the optional parameter `include_data_sources=True` to
         specs : List[str], optional
             List of names that are used to label that the data and/or metadata
             conform to some named standard specification.
+        exec: boolean
+            Defaulots to True. If set to False, ignores specs and returns
+            a JSON patch for metadata without applying it.
 
         See Also
         --------
@@ -436,6 +439,9 @@ client or pass the optional parameter `include_data_sources=True` to
             apply_update_patch(self.metadata_copy(), metadata),
             dumps=orjson.dumps,
         ).patch
+
+        if not exec:
+            return patch
 
         self.patch_metadata(patch=patch, specs=specs)
 
