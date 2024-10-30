@@ -14,6 +14,7 @@ from ..structures.core import StructureFamily
 from ..structures.data_source import Management
 from .pydantic_array import ArrayStructure
 from .pydantic_awkward import AwkwardStructure
+from .pydantic_ragged import RaggedStructure
 from .pydantic_sparse import SparseStructure
 from .pydantic_table import TableStructure
 
@@ -145,6 +146,7 @@ class DataSource(pydantic.BaseModel):
         Union[
             ArrayStructure,
             AwkwardStructure,
+            RaggedStructure,
             SparseStructure,
             NodeStructure,
             TableStructure,
@@ -179,6 +181,7 @@ class NodeAttributes(pydantic.BaseModel):
         Union[
             ArrayStructure,
             AwkwardStructure,
+            RaggedStructure,
             SparseStructure,
             NodeStructure,
             TableStructure,
@@ -234,6 +237,7 @@ resource_links_type_by_structure_family = {
     StructureFamily.array: ArrayLinks,
     StructureFamily.awkward: AwkwardLinks,
     StructureFamily.container: ContainerLinks,
+    StructureFamily.ragged: ArrayLinks,
     StructureFamily.sparse: SparseLinks,
     StructureFamily.table: DataFrameLinks,
 }

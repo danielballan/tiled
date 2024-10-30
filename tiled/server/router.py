@@ -1082,6 +1082,87 @@ async def awkward_full(
         raise HTTPException(status_code=HTTP_406_NOT_ACCEPTABLE, detail=err.args[0])
 
 
+@router.get(
+    "/ragged/block/{path:path}", response_model=schemas.Response, name="ragged block"
+)
+async def ragged_block(
+    request: Request,
+    entry=SecureEntry(
+        scopes=["read:data"],
+        structure_families={StructureFamily.ragged},
+    ),
+    block=Depends(block),
+    slice=Depends(slice_),
+    expected_shape=Depends(expected_shape),
+    format: Optional[str] = None,
+    filename: Optional[str] = None,
+    serialization_registry=Depends(get_serialization_registry),
+    settings: BaseSettings = Depends(get_settings),
+):
+    """
+    Fetch a chunk of array-like data.
+    """
+    shape = entry.structure().shape
+    # Check that block dimensionality matches array dimensionality.
+    ndim = len(shape)
+    if len(block) != ndim:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Block parameter must have {ndim} comma-separated parameters, "
+                f"corresponding to the dimensions of this {ndim}-dimensional array."
+            ),
+        )
+    if block == ():
+        # Handle special case of numpy scalar.
+        if shape != ():
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail=f"Requested scalar but shape is {entry.structure().shape}",
+            )
+        with record_timing(request.state.metrics, "read"):
+            array = await ensure_awaitable(entry.read)
+    else:
+        try:
+            with record_timing(request.state.metrics, "read"):
+                array = await ensure_awaitable(entry.read_block, block, slice)
+        except IndexError:
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST, detail="Block index out of range"
+            )
+        if (expected_shape is not None) and (expected_shape != array.shape):
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail=f"The expected_shape {expected_shape} does not match the actual shape {array.shape}",
+            )
+    # if array.nbytes > settings.response_bytesize_limit:
+    #     raise HTTPException(
+    #         status_code=HTTP_400_BAD_REQUEST,
+    #         detail=(
+    #             f"Response would exceed {settings.response_bytesize_limit}. "
+    #             "Use slicing ('?slice=...') to request smaller chunks."
+    #         ),
+    #     )
+    import awkward
+
+    components = awkward.to_buffers(array._impl)
+    try:
+        with record_timing(request.state.metrics, "pack"):
+            return await construct_data_response(
+                entry.structure_family,
+                serialization_registry,
+                components,
+                entry.metadata(),
+                request,
+                format,
+                specs=getattr(entry, "specs", []),
+                expires=getattr(entry, "content_stale_at", None),
+                filename=filename,
+            )
+    except UnsupportedMediaTypes as err:
+        raise HTTPException(status_code=HTTP_406_NOT_ACCEPTABLE, detail=err.args[0])
+
+
 @router.post("/metadata/{path:path}", response_model=schemas.PostMetadataResponse)
 async def post_metadata(
     request: Request,

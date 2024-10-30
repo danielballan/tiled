@@ -19,6 +19,7 @@ from ..utils import APACHE_ARROW_FILE_MIME_TYPE
 
 
 @serialization_registry.register(StructureFamily.awkward, "application/zip")
+@serialization_registry.register(StructureFamily.ragged, "application/zip")
 def to_zipped_buffers(components, metadata):
     (form, length, container) = components
     file = io.BytesIO()
@@ -33,6 +34,7 @@ def to_zipped_buffers(components, metadata):
 
 
 @deserialization_registry.register(StructureFamily.awkward, "application/zip")
+@serialization_registry.register(StructureFamily.ragged, "application/zip")
 def from_zipped_buffers(buffer, form, length):
     file = io.BytesIO(buffer)
     with zipfile.ZipFile(file, "r") as zip:
@@ -44,6 +46,7 @@ def from_zipped_buffers(buffer, form, length):
 
 
 @serialization_registry.register(StructureFamily.awkward, "application/json")
+@serialization_registry.register(StructureFamily.ragged, "application/json")
 def to_json(components, metadata):
     (form, length, container) = components
     file = io.StringIO()
