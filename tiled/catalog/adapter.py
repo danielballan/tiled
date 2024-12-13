@@ -1401,7 +1401,7 @@ def from_uri(
         stdout = process.stdout.decode()
         stderr = process.stderr.decode()
         logging.info(f"Subprocess stdout: {stdout}")
-        logging.error(f"Subprocess stderr: {stderr}")
+        logging.info(f"Subprocess stderr: {stderr}")
 
     parsed_url = make_url(uri)
     if (parsed_url.get_dialect().name == "sqlite") and (
