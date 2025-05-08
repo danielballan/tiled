@@ -2,6 +2,7 @@ database:
   uri: "sqlite+aiosqlite:///./tiled.sqlite"
   init_if_not_exists: true
 authentication:
+  secret_keys: ["secret"]  # stable JWT signature
   tiled_admins:
   - provider: toy
     id: "dallan"
