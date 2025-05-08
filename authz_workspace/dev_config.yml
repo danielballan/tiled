@@ -41,3 +41,40 @@ trees:
       writable_storage: "./storage/data"
       init_if_not_exists: true
       top_level_access_blob: {"tags": ["_ROOT_NODE_SST"]}
+  - tree: databroker.mongo_normalized:Tree.from_uri
+    path: /bmm/raw
+    args:
+      uri: mongodb://tiled:${TILED_DATABROKER_MONGO_PASSWORD}@mongo1.nsls2.bnl.gov,mongo2.nsls2.bnl.gov,mongo3.nsls2.bnl.gov/bmm-bluesky-documents?authSource=admin
+      handler_registry:
+        BMM_USBCAM: bmm_patches:BMM_JPEG_HANDLER
+        BMM_XAS_WEBCAM: bmm_patches:BMM_JPEG_HANDLER
+        BMM_XRD_WEBCAM: bmm_patches:BMM_JPEG_HANDLER
+        BMM_ANALOG_CAMERA: bmm_patches:BMM_JPEG_HANDLER
+        XSP3: area_detector_handlers.handlers:Xspress3HDF5Handler
+        AD_HDF5: area_detector_handlers.handlers:AreaDetectorHDF5Handler
+      transforms:
+        descriptor: bmm_patches:patch_descriptor
+      metadata:
+        name: BMM
+        long_name: Beamline for Materials Measurement
+        alternative_name: 6-BM
+        port: 06-BM
+        locations: ["xf06bm"]
+      authz_shim: mongo_authz:authz_shim
+  - tree: chx_patches:PatchedTree.from_uri  # custom adapter injects Eiger metadata
+    path: /chx/raw
+    args:
+      uri: mongodb://tiled:${TILED_DATABROKER_MONGO_PASSWORD}@mongo1.nsls2.bnl.gov,mongo2.nsls2.bnl.gov,mongo3.nsls2.bnl.gov/chx-bluesky-documents?authSource=admin
+      handler_registry:
+        # custom stuff
+        AD_EIGER: chx_patches:MetaDataAwareEiger
+        AD_EIGER2: chx_patches:MetaDataAwareEiger
+        AD_EIGER_SLICE: chx_patches:MetaDataAwareEiger
+        # standard stuff
+        AD_TIFF: area_detector_handlers.handlers:AreaDetectorTiffHandler
+      root_map:
+        /nsls2/xf11id1: /nsls2/data/chx/legacy
+      transforms:
+        descriptor: chx_patches:patch_descriptor
+        resource: chx_patches:patch_resource
+      authz_shim: mongo_authz:authz_shim
