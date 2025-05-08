@@ -7,23 +7,19 @@ authentication:
   - provider: toy
     id: "dallan"
   providers:
-  - provider: pam
-    authenticator: tiled.authenticators:LDAPAuthenticator
-    args:
-      server_address: "duoproxy.nsls2.bnl.gov"
-      bind_dn_template:
-      - "BNL\\{username}"
-      use_tls: true
-      use_ssl: true
-      confirmation_message: "You have logged in as {id}."
-  - provider: toy
-    authenticator: tiled.authenticators:DictionaryAuthenticator
-    args:
-      users_to_passwords:
-        nmaytan: "nmaytan"
-        dallan: "dallan"
-        biff: "biff"
-      confirmation_message: "You have logged in."
+  # - provider: pam
+  #   authenticator: tiled.authenticators:LDAPAuthenticator
+  #   args:
+  #     server_address: "duoproxy.nsls2.bnl.gov"
+  #     bind_dn_template:
+  #     - "BNL\\{username}"
+  #     use_tls: true
+  #     use_ssl: true
+  #   confirmation_message: "You have logged in as {id}."
+   - provider: toy
+     authenticator: tiled.authenticators:DummyAuthenticator
+     args:
+       confirmation_message: "You have logged in."
 access_control:
   access_policy: tag_based_pass_access_policy:TagBasedPASSAccessPolicy
   args:
