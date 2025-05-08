@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 
 def data_session_as_tag(query, catalog):
-    return catalog.apply_mongo_query({"data_session": {"$in": query.tags}})
+    return catalog.apply_mongo_query({"data_session": {"$in": list(query.tags)}})
 
 
 def access_blob_from_metadata(metadata, default=None):
@@ -13,9 +13,21 @@ def access_blob_from_metadata(metadata, default=None):
     return {"tags": tags}
 
 
-authz_shim = SimpleNamespace(
+bmm_authz_shim = SimpleNamespace(
     query_impl=data_session_as_tag,
-    access_blob_from_metadata=partial(
+    # The Catalog itself is public, but its contents will be filtered.
+    catalog_access_blob={"tags": ["public"]},
+    # The BlueskyRun gets default tags plus the 'data_session' from the start doc.
+    bluesky_run_access_blob_from_metadata=partial(
         access_blob_from_metadata, default=("bmm_beamline",)
+    ),
+)
+chx_authz_shim = SimpleNamespace(
+    query_impl=data_session_as_tag,
+    # The Catalog itself is public, but its contents will be filtered.
+    catalog_access_blob={"tags": ["public"]},
+    # The BlueskyRun gets default tags plus the 'data_session' from the start doc.
+    bluesky_run_access_blob_from_metadata=partial(
+        access_blob_from_metadata, default=("chx_beamline",)
     ),
 )

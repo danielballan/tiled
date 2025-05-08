@@ -60,7 +60,7 @@ trees:
         alternative_name: 6-BM
         port: 06-BM
         locations: ["xf06bm"]
-      authz_shim: mongo_authz:authz_shim
+      authz_shim: mongo_authz:bmm_authz_shim
   - tree: chx_patches:PatchedTree.from_uri  # custom adapter injects Eiger metadata
     path: /chx/raw
     args:
@@ -77,4 +77,4 @@ trees:
       transforms:
         descriptor: chx_patches:patch_descriptor
         resource: chx_patches:patch_resource
-      authz_shim: mongo_authz:authz_shim
+      authz_shim: mongo_authz:chx_authz_shim
