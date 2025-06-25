@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple, Union
 
 import pydantic_settings
 from fastapi import HTTPException, Query
+from fastapi.security import SecurityScopes
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_410_GONE
 
 from tiled.adapters.protocols import AnyAdapter
