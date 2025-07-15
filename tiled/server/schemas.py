@@ -564,4 +564,9 @@ class PatchMetadataResponse(pydantic.BaseModel, Generic[ResourceLinksT]):
     access_blob: Optional[Dict]
 
 
+class EnvelopeFormat(str, enum.Enum):
+    json = "json"
+    msgpack = "msgpack"
+
+
 NodeStructure.model_rebuild()
