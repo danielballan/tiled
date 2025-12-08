@@ -154,7 +154,7 @@ class TTLCacheDatastore(StreamingDatastore):
         if payload:
             mapping["payload"] = payload
         self._data_cache[f"data:{node_id}:{sequence}"] = mapping
-        await self._pubsub.publish(f"sequence:{node_id}", sequence)
+        await self._pubsub.publish(f"notify:{node_id}", sequence)
 
     async def close(self, node_id: str):
         # Increment the counter for this node.
@@ -167,7 +167,7 @@ class TTLCacheDatastore(StreamingDatastore):
         }
         mapping = {"sequence": sequence, "metadata": safe_json_dump(metadata)}
         self._data_cache[f"data:{node_id}:{sequence}"] = mapping
-        await self._pubsub.publish(f"sequence:{node_id}", sequence)
+        await self._pubsub.publish(f"notify:{node_id}", sequence)
 
 
 @register_datastore("redis")
