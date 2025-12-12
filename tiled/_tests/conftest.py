@@ -322,27 +322,29 @@ def minio_uri():
 
         # For convenience, we split the bucket from a string
         url = urlparse(uri)
-        bucket = url.path.lstrip("/")
+        bucket_name = url.path.lstrip("/")
         uri = url._replace(netloc="{}:{}".format(url.hostname, url.port), path="")
 
         client = Minio(
-            uri.geturl(),
+            endpoint=uri.geturl(),
             access_key=url.username,
             secret_key=url.password,
             secure=False,
         )
 
         # Reset the state of the bucket after each test.
-        if client.bucket_exists(bucket):
+        if client.bucket_exists(bucket_name=bucket_name):
             delete_object_list = map(
-                lambda x: DeleteObject(x.object_name),
-                client.list_objects(bucket, recursive=True),
+                lambda x: DeleteObject(object_name=x.object_name),
+                client.list_objects(bucket_name=bucket_name, recursive=True),
             )
-            errors = client.remove_objects(bucket, delete_object_list)
+            errors = client.remove_objects(
+                bucket_name=bucket_name, delete_object_list=delete_object_list
+            )
             for error in errors:
                 print("error occurred when deleting object", error)
         else:
-            client.make_bucket(bucket)
+            client.make_bucket(bucket_name=bucket_name)
 
     else:
         raise pytest.skip("No TILED_TEST_BUCKET configured")
@@ -357,7 +359,7 @@ def tiled_websocket_context(tmpdir, redis_uri):
             f"file://localhost{str(tmpdir / 'data')}",
             f"duckdb:///{tmpdir / 'data.duckdb'}",
         ],
-        readable_storage=[tempfile.gettempdir()],
+        readable_storage=[Path(tempfile.gettempdir()).resolve()],
         init_if_not_exists=True,
         # This uses shorter defaults than the production defaults. Nothing in
         # the test suite should be going on for more than ten minutes.
