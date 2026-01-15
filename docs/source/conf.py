@@ -309,22 +309,29 @@ generate_schema_documentation(
     "reference/client-profiles.md",
 )
 
-from tiled.adapters.mapping import MapAdapter
-from tiled.config import Authentication, AuthenticationProviderSpec
-from tiled.server.app import build_app
+# Generate API documentation if server dependencies are available
+try:
+    from tiled.adapters.mapping import MapAdapter
+    from tiled.config import Authentication, AuthenticationProviderSpec
+    from tiled.server.app import build_app
 
-app = build_app(
-    MapAdapter({}),
-    authentication=Authentication(
-        providers=[
-            AuthenticationProviderSpec(
-                provider="dummy",
-                authenticator="tiled.authenticators:DummyAuthenticator",
-            )
-        ]
-    ),
-)
-api = app.openapi()
+    app = build_app(
+        MapAdapter({}),
+        authentication=Authentication(
+            providers=[
+                AuthenticationProviderSpec(
+                    provider="dummy",
+                    authenticator="tiled.authenticators:DummyAuthenticator",
+                )
+            ]
+        ),
+    )
+    api = app.openapi()
 
-with open("reference/api.yml", "w") as file:
-    yaml.dump(api, file)
+    with open("reference/api.yml", "w") as file:
+        yaml.dump(api, file)
+except ImportError as e:
+    print(f"Warning: Could not generate API documentation due to missing dependencies: {e}")
+    # Create empty API file so build doesn't fail
+    with open("reference/api.yml", "w") as file:
+        yaml.dump({"info": {"title": "Tiled API", "version": "development"}}, file)
