@@ -63,26 +63,26 @@ autodoc_default_options = {
     "members": True,
     "undoc-members": True,
     "show-inheritance": True,
+    "exclude-members": "maketrans",
 }
 
-# Skip problematic methods inherited from str class for string-based enums
-def skip_problematic_string_methods(app, what, name, obj, skip, options):
+# Skip the maketrans method that causes issues with string-based enums
+autodoc_member_order = 'bysource'
+
+# More direct approach: exclude maketrans from all autodoc generation
+def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     """
-    Skip string methods that cause autodoc signature formatting issues
-    for string-based enum classes in tiled.structures modules.
+    Skip maketrans method for string-based enums to prevent signature formatting errors.
     """
-    if what == "method" and name == "maketrans":
-        # Get the module of the object being documented
-        if hasattr(obj, "__module__"):
-            module = obj.__module__
-            # Only skip for tiled.structures modules where the issue occurs
-            if module and "tiled.structures" in module:
-                return True
+    # Always skip maketrans method as it's inherited from str and causes formatting issues
+    if name == "maketrans":
+        return True
     return skip
 
 # Connect the skip function to autodoc
 def setup(app):
-    app.connect("autodoc-skip-member", skip_problematic_string_methods)
+    app.connect("autodoc-skip-member", autodoc_skip_member_handler)
+    return {'version': '0.1', 'parallel_read_safe': True, 'parallel_write_safe': True}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
