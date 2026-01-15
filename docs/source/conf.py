@@ -55,11 +55,9 @@ plot_html_show_source_link = False
 plot_html_show_formats = False
 
 # Generate the API documentation when building
-autosummary_generate = True
+# Temporarily disable autosummary generation to isolate the issue
+autosummary_generate = False
 numpydoc_show_class_members = False
-
-# Custom autosummary template configuration
-autosummary_generate_overwrite = True
 
 # Autodoc configuration
 autodoc_default_options = {
