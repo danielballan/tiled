@@ -101,13 +101,18 @@ See {doc}`../explanations/structures` for more context.
 
    tiled.structures.array.ArrayStructure
    tiled.structures.array.BuiltinDtype
-   tiled.structures.array.Endianness
-   tiled.structures.array.Kind
    tiled.structures.core.Spec
-   tiled.structures.core.StructureFamily
    tiled.structures.table.TableStructure
    tiled.structures.sparse.COOStructure
 ```
+
+### String-based Enums
+
+These enums inherit from both `str` and `enum.Enum`:
+
+- **tiled.structures.array.Endianness** - Enum for byte order: big, little, not_applicable
+- **tiled.structures.array.Kind** - Enum for numpy array kinds: bit_field, boolean, integer, etc.
+- **tiled.structures.core.StructureFamily** - Enum for structure types: array, awkward, container, sparse, table
 
 ## Configuration Parsing
 

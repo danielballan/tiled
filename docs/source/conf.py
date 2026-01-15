@@ -58,6 +58,9 @@ plot_html_show_formats = False
 autosummary_generate = True
 numpydoc_show_class_members = False
 
+# Custom autosummary template configuration
+autosummary_generate_overwrite = True
+
 # Autodoc configuration
 autodoc_default_options = {
     "members": True,
