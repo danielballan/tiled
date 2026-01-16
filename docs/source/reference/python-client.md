@@ -5,7 +5,7 @@
 These are functions for constructing a client object.
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.from_uri
@@ -24,7 +24,7 @@ dict) interface, so it supports these standard "magic methods":
 as well as:
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.get
@@ -46,7 +46,7 @@ and several convenience methods:
 
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.iterviews.ValuesView.first
@@ -59,7 +59,7 @@ as well as a method for controlling the "page size" in which results will be
 batched across requests, which affects performance.
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.iterviews.ValuesView.page_size
@@ -70,7 +70,7 @@ Likewise for `.keys()` and `.items()`.
 Beyond the Mapping interface, Container adds the following attributes
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.metadata
@@ -82,7 +82,7 @@ Beyond the Mapping interface, Container adds the following attributes
 It adds these methods, which return a new Container instance.
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.search
@@ -93,7 +93,7 @@ It adds this method, which returns the unique metadata keys,
 structure_families, and specs of its children along with their counts.
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.distinct
@@ -103,7 +103,7 @@ And, finally, there are convenience methods for writing:
 
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.create_container
@@ -117,7 +117,7 @@ and a low-level method for creating a new node to write into:
 
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.container.Container.new
@@ -141,7 +141,7 @@ Tiled currently includes two clients for each structure family:
 ### Base
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.base.BaseClient
@@ -166,7 +166,7 @@ Tiled currently includes two clients for each structure family:
 ### Array
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.array.DaskArrayClient
@@ -179,7 +179,7 @@ Tiled currently includes two clients for each structure family:
 ```
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.array.ArrayClient
@@ -193,7 +193,7 @@ Tiled currently includes two clients for each structure family:
 ### Awkward
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.awkward.AwkwardClient
@@ -203,7 +203,7 @@ Tiled currently includes two clients for each structure family:
 ```
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.array.ArrayClient
@@ -215,7 +215,7 @@ Tiled currently includes two clients for each structure family:
 ### Sparse Array
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.sparse.SparseClient
@@ -228,7 +228,7 @@ Tiled currently includes two clients for each structure family:
 ### DataFrame
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.dataframe.DaskDataFrameClient
@@ -240,7 +240,7 @@ Tiled currently includes two clients for each structure family:
 ```
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.dataframe.DataFrameClient
@@ -254,7 +254,7 @@ Tiled currently includes two clients for each structure family:
 ### Xarray Dataset
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.xarray.DaskDatasetClient
@@ -262,7 +262,7 @@ Tiled currently includes two clients for each structure family:
 ```
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.xarray.DatasetClient
@@ -273,7 +273,7 @@ Tiled currently includes two clients for each structure family:
 ## Context
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.context.Context
@@ -291,7 +291,7 @@ Tiled currently includes two clients for each structure family:
 ## Cache
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.cache.Cache
@@ -313,7 +313,7 @@ Tiled currently includes two clients for each structure family:
 
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.client.sync.copy
