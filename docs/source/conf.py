@@ -55,8 +55,9 @@ plot_html_show_source_link = False
 plot_html_show_formats = False
 
 # Generate the API documentation when building
-# Temporarily disable autosummary generation to isolate the issue
-autosummary_generate = False
+autosummary_generate = True
+# Force regeneration to clear any cached problematic files
+autosummary_generate_overwrite = True
 numpydoc_show_class_members = False
 
 # Autodoc configuration
@@ -70,14 +71,21 @@ autodoc_default_options = {
 # Skip the maketrans method that causes issues with string-based enums
 autodoc_member_order = 'bysource'
 
-# More direct approach: exclude maketrans from all autodoc generation
+# Skip problematic string-based enums entirely from autosummary
 def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     """
-    Skip maketrans method for string-based enums to prevent signature formatting errors.
+    Skip maketrans method and problematic string-based enum classes.
     """
-    # Always skip maketrans method as it's inherited from str and causes formatting issues
+    # Skip maketrans method entirely
     if name == "maketrans":
         return True
+    
+    # Skip the problematic enum classes entirely
+    if what == "class" and hasattr(obj, "__name__"):
+        class_name = obj.__name__
+        if class_name in ["Endianness", "Kind", "StructureFamily"]:
+            return True
+    
     return skip
 
 # Connect the skip function to autodoc
