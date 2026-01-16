@@ -33,7 +33,7 @@
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",  # Re-enabled with proper exclusions
+    # "sphinx.ext.autosummary",  # Disabled due to persistent maketrans RST generation
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",

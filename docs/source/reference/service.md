@@ -9,7 +9,7 @@ These Adapters don't do any I/O, but instead wrap a structure in memory
 or its dask counterpart.
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.adapters.mapping.MapAdapter
@@ -22,7 +22,7 @@ or its dask counterpart.
 ### File Adapters
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.adapters.csv.CSVAdapter
@@ -50,7 +50,7 @@ assumption about your metadata / data and its meaning.
 ```
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.queries.FullText
@@ -60,7 +60,7 @@ assumption about your metadata / data and its meaning.
 ### Custom Search Query Registration
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.query_registration.QueryRegistry
@@ -76,7 +76,7 @@ When registering new types, make reference to the
 [IANA Media Types (formerly known as MIME types)](https://www.iana.org/assignments/media-types/media-types.xhtml).
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.media_type_registration.SerializationRegistry
@@ -96,7 +96,7 @@ requests for slices of data and decode the responses.
 See {doc}`../explanations/structures` for more context.
 
 ```{eval-rst}
-.. autosummary::
+.. # autosummary::
    :toctree: generated
 
    tiled.structures.array.ArrayStructure
@@ -117,7 +117,7 @@ These enums inherit from both `str` and `enum.Enum`:
 ## Configuration Parsing
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.config.parse_configs
@@ -126,7 +126,7 @@ These enums inherit from both `str` and `enum.Enum`:
 ## HTTP Server Application
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.server.app.build_app
@@ -136,7 +136,7 @@ These enums inherit from both `str` and `enum.Enum`:
 ## Resource Cache
 
 ```{eval-rst}
-.... # autosummary::
+...... # autosummary::
    :toctree: generated
 
    tiled.adapters.resource_cache.get_resource_cache
