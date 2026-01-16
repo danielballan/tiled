@@ -68,6 +68,13 @@ autodoc_default_options = {
     "exclude-members": "maketrans",
 }
 
+# Completely ignore problematic modules for autodoc
+autodoc_mock_imports = [
+    "tiled.structures.array.Endianness",
+    "tiled.structures.array.Kind", 
+    "tiled.structures.core.StructureFamily",
+]
+
 # Skip the maketrans method that causes issues with string-based enums
 autodoc_member_order = 'bysource'
 
@@ -76,21 +83,57 @@ def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     """
     Skip maketrans method and problematic string-based enum classes.
     """
-    # Skip maketrans method entirely
+    # Skip maketrans method entirely - this is the main issue
     if name == "maketrans":
         return True
     
-    # Skip the problematic enum classes entirely
-    if what == "class" and hasattr(obj, "__name__"):
-        class_name = obj.__name__
-        if class_name in ["Endianness", "Kind", "StructureFamily"]:
+    # Skip the problematic enum classes entirely to prevent RST generation
+    if hasattr(obj, "__module__") and hasattr(obj, "__name__"):
+        obj_module = getattr(obj, "__module__", "")
+        obj_name = getattr(obj, "__name__", "")
+        
+        # Skip these specific classes that cause maketrans issues
+        problematic_classes = [
+            "tiled.structures.array.Endianness",
+            "tiled.structures.array.Kind",
+            "tiled.structures.core.StructureFamily"
+        ]
+        
+        full_name = f"{obj_module}.{obj_name}"
+        if full_name in problematic_classes:
+            return True
+            
+        # Also skip by class name only as backup
+        if obj_name in ["Endianness", "Kind", "StructureFamily"]:
             return True
     
     return skip
 
-# Connect the skip function to autodoc
+# Handler to prevent autosummary from processing problematic classes
+def autosummary_skip_handler(app, what, name, obj, options, lines):
+    """
+    Skip problematic enum classes in autosummary generation.
+    """
+    if hasattr(obj, "__module__") and hasattr(obj, "__name__"):
+        obj_module = getattr(obj, "__module__", "")
+        obj_name = getattr(obj, "__name__", "")
+        
+        # Skip these specific classes
+        if obj_name in ["Endianness", "Kind", "StructureFamily"] or "tiled.structures" in obj_module:
+            return []
+    
+    return lines
+
+# Connect the skip functions to both autodoc and autosummary
 def setup(app):
     app.connect("autodoc-skip-member", autodoc_skip_member_handler)
+    # Try to catch autosummary processing as well
+    if hasattr(app, "connect"):
+        try:
+            app.connect("autosummary-process-docstring", autosummary_skip_handler)
+        except Exception:
+            pass  # Event might not exist in all Sphinx versions
+    
     return {'version': '0.1', 'parallel_read_safe': True, 'parallel_write_safe': True}
 
 # Add any paths that contain templates here, relative to this directory.
