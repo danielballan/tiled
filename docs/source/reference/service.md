@@ -96,7 +96,7 @@ requests for slices of data and decode the responses.
 See {doc}`../explanations/structures` for more context.
 
 ```{eval-rst}
-.. # autosummary::
+.. autosummary::
    :toctree: generated
 
    tiled.structures.array.ArrayStructure
