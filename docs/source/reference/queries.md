@@ -11,7 +11,7 @@ c.search(FullText("hello"))
 Follow the links in the table below for examples specific to each query.
 
 ```{eval-rst}
-.. autosummary::
+.. # autosummary::
    :toctree: generated
 
    tiled.queries.Comparison
@@ -94,7 +94,7 @@ a query with `not`, `in`, `and`, or `or`.
 
 
 ```{eval-rst}
-.. autosummary::
+.. # autosummary::
    :toctree: generated
 
    tiled.queries.Key
