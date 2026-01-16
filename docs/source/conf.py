@@ -60,6 +60,14 @@ autosummary_generate = True
 autosummary_generate_overwrite = True
 numpydoc_show_class_members = False
 
+# Exclude problematic enum classes from autosummary processing entirely
+autosummary_ignore_module_all = False
+exclude_patterns = [
+    'reference/generated/tiled.structures.array.Endianness.rst',
+    'reference/generated/tiled.structures.array.Kind.rst', 
+    'reference/generated/tiled.structures.core.StructureFamily.rst',
+]
+
 # Autodoc configuration
 autodoc_default_options = {
     "members": True,
@@ -68,12 +76,29 @@ autodoc_default_options = {
     "exclude-members": "maketrans",
 }
 
-# Completely ignore problematic modules for autodoc
-autodoc_mock_imports = [
-    "tiled.structures.array.Endianness",
-    "tiled.structures.array.Kind", 
-    "tiled.structures.core.StructureFamily",
-]
+# More aggressive exclusion approach
+autodoc_typehints = 'signature'
+autodoc_typehints_description_target = 'documented'
+
+# Add these classes to the global skip list
+def should_skip_member(app, what, name, obj, skip, options):
+    """Global skip function that runs early in the process"""
+    # Skip maketrans entirely
+    if name == 'maketrans':
+        return True
+    
+    # Skip problematic enum classes by checking their full qualified name
+    if hasattr(obj, '__module__') and hasattr(obj, '__qualname__'):
+        full_name = f"{obj.__module__}.{obj.__qualname__}"
+        problematic_names = [
+            'tiled.structures.array.Endianness',
+            'tiled.structures.array.Kind',
+            'tiled.structures.core.StructureFamily'
+        ]
+        if any(prob in full_name for prob in problematic_names):
+            return True
+    
+    return skip
 
 # Skip the maketrans method that causes issues with string-based enums
 autodoc_member_order = 'bysource'
@@ -126,13 +151,15 @@ def autosummary_skip_handler(app, what, name, obj, options, lines):
 
 # Connect the skip functions to both autodoc and autosummary
 def setup(app):
+    # Connect both skip handlers - one runs early, one catches edge cases
+    app.connect("autodoc-skip-member", should_skip_member)
     app.connect("autodoc-skip-member", autodoc_skip_member_handler)
-    # Try to catch autosummary processing as well
-    if hasattr(app, "connect"):
-        try:
-            app.connect("autosummary-process-docstring", autosummary_skip_handler)
-        except Exception:
-            pass  # Event might not exist in all Sphinx versions
+    
+    # Also try to catch autosummary processing
+    try:
+        app.connect("autosummary-process-docstring", autosummary_skip_handler)
+    except Exception:
+        pass  # Event might not exist in all Sphinx versions
     
     return {'version': '0.1', 'parallel_read_safe': True, 'parallel_write_safe': True}
 
