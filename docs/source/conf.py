@@ -33,7 +33,7 @@
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",  # Re-enabled with comprehensive protective measures
+    # "sphinx.ext.autosummary",  # Disabled - causes persistent maketrans warnings
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
