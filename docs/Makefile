@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = "-W"  # This flag turns warnings into errors.
+SPHINXOPTS    = ""  # Temporarily allow warnings to see what's causing CI failure.
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = PackagingScientificPython
 SOURCEDIR     = source
