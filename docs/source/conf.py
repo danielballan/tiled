@@ -309,6 +309,3 @@ with open("reference/api.yml", "w") as file:
 autodoc_default_options = {
     "exclude-members": "maketrans",
 }
-
-# Alternative approach: Also configure autosummary to exclude problematic members
-autosummary_ignore_module_all = True
