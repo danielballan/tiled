@@ -303,7 +303,9 @@ api = app.openapi()
 with open("reference/api.yml", "w") as file:
     yaml.dump(api, file)
 
-# Work around issue with enum str picking up str methods.
+# Work around issue with str-based enums inheriting problematic str methods.
+# The 'maketrans' method from str causes "list assignment index out of range" errors
+# when Sphinx autodoc tries to format its signature.
 autodoc_default_options = {
     "exclude-members": "maketrans",
 }
